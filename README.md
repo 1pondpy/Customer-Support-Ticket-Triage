@@ -1,3 +1,3 @@
 # Customer-Support-Ticket-Triage
-Group 4
-Customer Support Ticket Triage for SCI19 3914 &amp; SCI19 3934
+## Group 4 in SCI19 3914 &amp; SCI19 3934
+Customer Support Ticket Triage
