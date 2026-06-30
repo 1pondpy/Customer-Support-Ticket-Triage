@@ -1,3 +1,10 @@
 # Customer-Support-Ticket-Triage
-## Group 4 in SCI19 3914 &amp; SCI19 3934
-Customer Support Ticket Triage
+### 🚀 Group 4 | SCI19 3914 & SCI19 3934
+
+ระบบคัดกรอง แยกประเภท และจัดลำดับความสำคัญของ Ticket
+
+Members :
+B6722241  นางสาวลลิตา ร่มลำดวน
+B6735036  นายพัชรพล ลาภชุ่มศรี
+B6739324  นายเจษฎา โพธิ์ราช
+B6739393  นางสาวนิจจารีย์ ระดาบุตร
