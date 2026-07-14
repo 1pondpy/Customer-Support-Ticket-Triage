@@ -1,14 +1,3 @@
-# Customer-Support-Ticket-Triage
-### 🚀 Group 4 | SCI19 3914 & SCI19 3934
-
-### ระบบคัดกรอง แยกประเภท และจัดลำดับความสำคัญของ Ticket
-
-### Members :
-#### B6722241  นางสาวลลิตา ร่มลำดวน
-#### B6735036  นายพัชรพล ลาภชุ่มศรี
-#### B6739324  นายเจษฎา โพธิ์ราช
-#### B6739393  นางสาวนิจจารีย์ ระดาบุตร
-
 # Customer Support Ticket Triage
 
 ## Overview
@@ -85,3 +74,10 @@ This modular design allows the backend to evolve from a simple mock implementati
 * Mock responses only
 
 These components will be implemented in later iterations.
+
+### Group 4 | SCI19 3914 & SCI19 3934
+### Members :
+#### B6722241  นางสาวลลิตา ร่มลำดวน
+#### B6735036  นายพัชรพล ลาภชุ่มศรี
+#### B6739324  นายเจษฎา โพธิ์ราช
+#### B6739393  นางสาวนิจจารีย์ ระดาบุตร
