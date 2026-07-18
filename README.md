@@ -2,30 +2,30 @@
 
 ## Overview
 
-Customer Support Ticket Triage is an AI-ready backend service designed to classify customer support tickets and generate structured responses. This iteration (`v0.1.0`) implements a **Walking Skeleton**, focusing on a working API and system architecture without integrating a real Large Language Model (LLM).
+Customer Support Ticket Triage is an AI-ready backend service designed to classify customer support tickets and generate structured responses.
+
+This iteration (**v0.1.0 – Walking Skeleton**) focuses on delivering a working backend API, system architecture, and data validation without integrating a real Large Language Model (LLM).
 
 ---
 
 ## Agent Design
 
-The system currently uses a **Mock Triage Agent**.
+The current implementation uses a **Mock Triage Agent** to simulate future AI behavior while keeping the system functional.
 
-The purpose of the Mock Agent is to simulate the behavior of the future AI agent while keeping the system functional during the first iteration.
+### Responsibilities
 
-### Current Responsibilities
-
-* Receive a support ticket request
-* Validate the request using Pydantic schemas
-* Execute mock classification logic
-* Generate a predefined response
-* Return a structured JSON response
+- Receive customer support tickets
+- Validate requests using Pydantic schemas
+- Perform mock ticket classification
+- Generate predefined structured responses
+- Return JSON output
 
 ### Current Workflow
 
-```
+```text
 Client
    │
-POST /triage
+POST /tickets/triage
    │
 FastAPI Router
    │
@@ -38,9 +38,9 @@ Structured JSON Response
 
 ### Future Architecture
 
-In future iterations, the Mock Agent will be replaced by an AI-powered workflow.
+The Mock Agent will later be replaced by an AI-powered workflow.
 
-```
+```text
 Client
    │
 FastAPI
@@ -51,37 +51,178 @@ Triage Agent
    └── Judge Response Quality
 ```
 
-This modular design allows the backend to evolve from a simple mock implementation into a complete Retrieval-Augmented Generation (RAG) system without changing the public API.
+This modular architecture allows future AI components to be integrated without changing the public API.
 
 ---
 
-## Current Features
+## Features
 
-* FastAPI backend
-* Pydantic request/response schemas
-* Mock ticket classification
-* Structured JSON responses
-* Interactive Swagger documentation (`/docs`)
+- FastAPI backend
+- Pydantic request/response schemas
+- Mock ticket classification
+- Structured JSON responses
+- Interactive Swagger UI (`/docs`)
+- RESTful API endpoint
+
+---
+
+## Project Structure
+
+```text
+customer-support-ticket-triage/
+│
+├── app/
+│   ├── api/
+│   ├── models/
+│   ├── schemas/
+│   └── main.py
+│
+├── data/
+│   ├── sample.csv
+│   └── twcs.csv
+│
+├── .env.example
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## Environment Configuration
+
+Configuration values are isolated from the application source code.
+
+- `.env.example` provides the required environment variable template.
+- `.env` should remain local and is excluded using `.gitignore`.
+- Future API keys (OpenAI, vector database, etc.) will be stored in `.env`.
+
+---
+
+## Repository Hygiene
+
+The repository includes only lightweight sample datasets.
+
+```
+data/
+├── sample.csv
+└── twcs.csv
+```
+
+Both datasets are trimmed to approximately the first **1,000 rows** to keep repository size manageable.
+
+---
+
+## Routing & Triage Design Matrix
+
+### Priority & Escalation Logic
+
+- **P1**
+  - Premium customers
+  - Critical or urgent issues
+  - Automatically escalated
+
+- **P2–P4**
+  - Standard tickets
+  - Routed based on detected category
+
+### Queue Assignment
+
+| Category | Assigned Queue |
+|----------|----------------|
+| Technical | `tech_support_queue` |
+| Billing | `billing_default_queue` |
+| General | `general_support_queue` |
+
+---
+
+## API Endpoint
+
+### POST `/tickets/triage`
+
+Accepts a customer support ticket and returns a structured triage result.
+
+### Sample Request
+
+```json
+{
+  "subject": "Urgent: Billing discrepancy on my premium account",
+  "body": "I noticed an incorrect charge on my invoice this month. Please resolve this immediately.",
+  "customer_tier": "premium",
+  "metadata": {
+    "source": "twitter",
+    "browser": "chrome"
+  }
+}
+```
+
+### Sample Response
+
+```json
+{
+  "category": "billing",
+  "sub_intent": "dispute_charge",
+  "priority": "P1",
+  "assigned_queue": "billing_emergency_queue",
+  "industry": "e-commerce",
+  "suggested_macro_id": "macro_billing_premium_refund",
+  "internal_notes": "Mocked: Premium customer billing conflict escalated for manual review.",
+  "policy_citations": [
+    "policy_billing_v2_section3"
+  ],
+  "confidence": 0.95,
+  "escalate": true
+}
+```
+
+---
+
+## Running the Project
+
+### Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### Start the server
+
+```bash
+uvicorn app.main:app --reload
+```
+
+### Open Swagger UI
+
+```
+http://127.0.0.1:8000/docs
+```
 
 ---
 
 ## Current Limitations
 
-* No real LLM integration
-* No Retrieval-Augmented Generation (RAG)
-* No multi-agent orchestration
-* No Judge component
-* Mock responses only
+- No real LLM integration
+- No Retrieval-Augmented Generation (RAG)
+- No multi-agent orchestration
+- No response evaluation (Judge Agent)
+- Mock responses only
 
-These components will be implemented in later iterations.
+These features will be implemented in future iterations.
+
+---
+
+## Version
+
+**v0.1.0 — Walking Skeleton**
 
 ---
 
-### Group 4 | SCI19 3914 & SCI19 3934
-### Members :
-#### B6722241  นางสาวลลิตา ร่มลำดวน
-#### B6735036  นายพัชรพล ลาภชุ่มศรี
-#### B6739324  นายเจษฎา โพธิ์ราช
-#### B6739393  นางสาวนิจจารีย์ ระดาบุตร
+## Authors
 
----
+**Group 4 — SCI19 3914 & SCI19 3934**
+
+| Student ID | Name |
+|------------|------|
+| B6722241 | นางสาวลลิตา ร่มลำดวน |
+| B6735036 | นายพัชรพล ลาภชุ่มศรี |
+| B6739324 | นายเจษฎา โพธิ์ราช |
+| B6739393 | นางสาวนิจจารีย์ ระดาบุตร |
