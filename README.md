@@ -102,11 +102,7 @@ Configuration values are isolated from the application source code.
 
 The repository includes only lightweight sample datasets.
 
-<<<<<<< HEAD
-```
-=======
 ```text
->>>>>>> 45c2c1b (update before iteration1 (2))
 data/
 ├── sample.csv
 └── twcs.csv
@@ -180,8 +176,6 @@ Accepts a customer support ticket and returns a structured triage result.
 
 ---
 
-<<<<<<< HEAD
-=======
 ## Sample Execution Test (API Contract Verification)
 
 The following example demonstrates a successful execution of the `POST /tickets/triage` endpoint using the current mock implementation. This verifies that the API contract defined by the Pydantic schemas is correctly processed and returns the expected structured JSON response.
@@ -234,7 +228,6 @@ The following example demonstrates a successful execution of the `POST /tickets/
 
 ---
 
->>>>>>> 45c2c1b (update before iteration1 (2))
 ## Running the Project
 
 ### Install dependencies
@@ -251,11 +244,7 @@ uvicorn app.main:app --reload
 
 ### Open Swagger UI
 
-<<<<<<< HEAD
-```
-=======
 ```text
->>>>>>> 45c2c1b (update before iteration1 (2))
 http://127.0.0.1:8000/docs
 ```
 
@@ -288,8 +277,4 @@ These features will be implemented in future iterations.
 | B6722241 | นางสาวลลิตา ร่มลำดวน |
 | B6735036 | นายพัชรพล ลาภชุ่มศรี |
 | B6739324 | นายเจษฎา โพธิ์ราช |
-<<<<<<< HEAD
 | B6739393 | นางสาวนิจจารีย์ ระดาบุตร |
-=======
-| B6739393 | นางสาวนิจจารีย์ ระดาบุตร |
->>>>>>> 45c2c1b (update before iteration1 (2))
