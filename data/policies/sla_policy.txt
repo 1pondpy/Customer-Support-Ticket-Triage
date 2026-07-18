@@ -1,0 +1,5 @@
+[SLA & PRIORITY ESCALATION POLICY]
+- Priority 1 (P1): Triggered when customer_tier is "premium" OR the ticket contains critical keywords like "outage", "security breach", or "data leak". Action: Set escalate=true and assign to emergency_escalation_queue.
+- Priority 2 (P2): High urgency issues from standard users (e.g., cannot log in, billing dispute).
+- Priority 3 (P3): Normal inquiries or standard system behavior questions.
+- Priority 4 (P4): General feedback or feature requests.

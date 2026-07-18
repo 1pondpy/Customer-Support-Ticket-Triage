@@ -102,7 +102,11 @@ Configuration values are isolated from the application source code.
 
 The repository includes only lightweight sample datasets.
 
+<<<<<<< HEAD
 ```
+=======
+```text
+>>>>>>> 45c2c1b (update before iteration1 (2))
 data/
 ├── sample.csv
 └── twcs.csv
@@ -176,6 +180,61 @@ Accepts a customer support ticket and returns a structured triage result.
 
 ---
 
+<<<<<<< HEAD
+=======
+## Sample Execution Test (API Contract Verification)
+
+The following example demonstrates a successful execution of the `POST /tickets/triage` endpoint using the current mock implementation. This verifies that the API contract defined by the Pydantic schemas is correctly processed and returns the expected structured JSON response.
+
+### Request
+
+```json
+{
+  "subject": "Inbound Tweet Triage Test",
+  "body": "@AppleSupport causing the reply to be disregarded and the tapped notification under the keyboard is opened",
+  "customer_tier": "free",
+  "metadata": {
+    "tweet_id": "119237",
+    "author_id": "105834",
+    "inbound": "TRUE",
+    "created_at": "Wed Oct 11 06:55:44 +0000 2017",
+    "response_tweet_id": "119236",
+    "in_response_to_tweet_id": ""
+  }
+}
+```
+
+### Response
+
+**HTTP Status:** `200 OK`
+
+```json
+{
+  "category": "billing",
+  "sub_intent": "double_charge",
+  "priority": "P2",
+  "assigned_queue": "billing_default_queue",
+  "suggested_macro_id": "macro_billing_refund_check",
+  "internal_notes": "Mocked: Processed via Triage Service layer.",
+  "policy_citations": [
+    "SLA-BILLING-V1",
+    "REFUND-POLICY-SEC3"
+  ],
+  "confidence": 0.95,
+  "escalate": false
+}
+```
+
+### Verification
+
+- Request payload successfully validated using **Pydantic**.
+- The API returned **HTTP 200 OK**.
+- The Mock Triage Agent generated a structured response following the `TriageResult` schema.
+- The endpoint successfully demonstrates the expected API contract for future AI integration.
+
+---
+
+>>>>>>> 45c2c1b (update before iteration1 (2))
 ## Running the Project
 
 ### Install dependencies
@@ -192,7 +251,11 @@ uvicorn app.main:app --reload
 
 ### Open Swagger UI
 
+<<<<<<< HEAD
 ```
+=======
+```text
+>>>>>>> 45c2c1b (update before iteration1 (2))
 http://127.0.0.1:8000/docs
 ```
 
@@ -225,4 +288,8 @@ These features will be implemented in future iterations.
 | B6722241 | นางสาวลลิตา ร่มลำดวน |
 | B6735036 | นายพัชรพล ลาภชุ่มศรี |
 | B6739324 | นายเจษฎา โพธิ์ราช |
+<<<<<<< HEAD
 | B6739393 | นางสาวนิจจารีย์ ระดาบุตร |
+=======
+| B6739393 | นางสาวนิจจารีย์ ระดาบุตร |
+>>>>>>> 45c2c1b (update before iteration1 (2))

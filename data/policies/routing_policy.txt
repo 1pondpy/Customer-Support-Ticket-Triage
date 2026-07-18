@@ -1,0 +1,6 @@
+[ROUTING MATRIX POLICY]
+- Categories: billing, technical, refund, account, shipping, other
+- If the ticket mentions "invoice", "charge", "payment", or "discrepancy" -> Route to billing_default_queue.
+- If the ticket mentions "bug", "crash", "error", "api", or "server" -> Route to tech_support_queue.
+- If the ticket mentions "money back" or "return request" -> Route to refund_expert_queue.
+- If the ticket does not match any specific rule -> Route to general_triage_queue.
