@@ -1,0 +1,7 @@
+[BILLING DEPARTMENT POLICY]
+- Policy ID: POLICY-BILLING-V1
+- Scope: Invoices, Charge Disputes, Refunds, Payment Failures, Subscription Upgrades.
+- Guidelines:
+  1. Dispute Charges: If a customer mentions "incorrect charge", "discrepancy", or "double charge", assign sub_intent="dispute_charge" and route to "billing_default_queue".
+  2. Refunds: If a user explicitly requests "money back" or "return payment", check customer_tier. If tier is "premium", route to "billing_emergency_queue" for fast refund processing.
+  3. Escalation Rules: Any billing dispute over $500 or involving premium users must set escalate=true.

@@ -1,0 +1,7 @@
+[TECHNICAL SUPPORT POLICY]
+- Policy ID: POLICY-TECH-V1
+- Scope: Application Crashes, Bugs, System Outages, API Errors, Performance Issues.
+- Guidelines:
+  1. Bug Reports: If a ticket mentions "crash", "bug", "error message", "freeze", or "notification bug", assign category="technical" and sub_intent="bug_report". Route to "tech_support_queue".
+  2. Outages & Critical Errors: If the issue impacts multiple users, system outage, or keyboard/UI blocking bugs, set priority to "P2" or "P1".
+  3. Escalation Rules: If the ticket contains security concerns or data leak, set escalate=true and priority="P1" immediately.
