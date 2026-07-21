@@ -184,16 +184,12 @@ The following example demonstrates a successful execution of the `POST /tickets/
 
 ```json
 {
-  "subject": "Inbound Tweet Triage Test",
-  "body": "@AppleSupport causing the reply to be disregarded and the tapped notification under the keyboard is opened",
-  "customer_tier": "free",
+  "subject": "Urgent: Billing discrepancy on my pro account",
+  "body": "I noticed an incorrect charge on my invoice this month. Please resolve this immediately.",
+  "customer_tier": "pro",
   "metadata": {
-    "tweet_id": "119237",
-    "author_id": "105834",
-    "inbound": "TRUE",
-    "created_at": "Wed Oct 11 06:55:44 +0000 2017",
-    "response_tweet_id": "119236",
-    "in_response_to_tweet_id": ""
+    "source": "twitter",
+    "browser": "chrome"
   }
 }
 ```
