@@ -231,57 +231,101 @@ Accepts a customer support ticket and returns a structured triage result.
 
 ---
 
-## Sample Request
+# Sample Requests & Responses
+
+The following examples demonstrate how the API processes different customer support scenarios and returns structured triage results.
+
+---
+
+## Example 1 — Technical Bug Report
+
+### Request (`TicketInput`)
 
 ```json
 {
-  "subject": "Urgent: Billing discrepancy on my pro account",
-  "body": "I noticed an incorrect charge on my invoice this month. Please resolve this immediately.",
-  "customer_tier": "pro",
+  "subject": "App Interaction & Keyboard Bug",
+  "body": "@AppleSupport causing the reply to be disregarded and the tapped notification under the keyboard is opened😡😡😡",
+  "customer_tier": "free",
   "metadata": {
-    "source": "twitter",
-    "browser": "chrome"
+    "tweet_id": "119237",
+    "author_id": "105834",
+    "inbound": "TRUE",
+    "created_at": "Wed Oct 11 06:55:44 +0000 2017",
+    "response_tweet_id": "119236",
+    "in_response_to_tweet_id": ""
   }
 }
 ```
 
----
-
-## Sample Response
+### Response (`TriageResult`)
 
 ```json
 {
-  "category": "billing",
-  "sub_intent": "double_charge",
-  "priority": "P2",
-  "assigned_queue": "billing_default_queue",
-  "suggested_macro_id": "macro_billing_refund_check",
-  "internal_notes": "Mocked: Processed via Triage Service layer.",
+  "category": "technical",
+  "sub_intent": "app_crash_bug",
+  "priority": "P3",
+  "assigned_queue": "tech_support_queue",
+  "suggested_macro_id": "macro_ios_keyboard_troubleshoot",
+  "internal_notes": "User experiencing UI overlay bug with keyboard notifications. Route to Tier 1 Technical Support.",
   "policy_citations": [
-    "SLA-BILLING-V1",
-    "REFUND-POLICY-SEC3"
+    "TECH-POLICY-V1-BUG-REPORT"
   ],
-  "confidence": 0.95,
+  "confidence": 0.92,
   "escalate": false
 }
 ```
 
 ---
 
-# API Contract Verification
+## Example 2 — Customer Support Channel Failure
 
-The endpoint has been verified to ensure compatibility with the defined Pydantic schemas.
+### Request (`TicketInput`)
 
-### Verification Results
+```json
+{
+  "subject": "Live Chat Error & Unresponsive Support Line",
+  "body": "@VirginTrains I still haven't heard & the number I'm directed to by phone is a dead end & the live chat doesn't work. Can someone call me?",
+  "customer_tier": "pro",
+  "metadata": {
+    "tweet_id": "119242",
+    "author_id": "105836",
+    "inbound": "TRUE",
+    "created_at": "Tue Oct 10 15:09:00 +0000 2017",
+    "response_tweet_id": "119240",
+    "in_response_to_tweet_id": "119246"
+  }
+}
+```
 
-- Request successfully validated using `TicketInput`
-- Supported customer tiers:
-  - `free`
-  - `pro`
-  - `enterprise`
-- Returned **HTTP 200 OK**
-- Response conforms to `TriageResult`
-- Verified public API contract for future LLM integration
+### Response (`TriageResult`)
+
+```json
+{
+  "category": "technical",
+  "sub_intent": "service_channel_down",
+  "priority": "P2",
+  "assigned_queue": "tech_support_queue",
+  "suggested_macro_id": "macro_callback_request_pro",
+  "internal_notes": "Pro user unable to reach support via phone/live chat. High risk of customer dissatisfaction.",
+  "policy_citations": [
+    "SLA-POLICY-SEC2-PRO-CALLBACK"
+  ],
+  "confidence": 0.94,
+  "escalate": false
+}
+```
+
+---
+
+## Verification Highlights
+
+Both examples demonstrate that:
+
+- Input payloads are successfully validated by the `TicketInput` schema.
+- The API returns responses conforming to the `TriageResult` schema.
+- Different ticket types are routed to the appropriate support queue.
+- Customer tier affects priority and macro selection.
+- The API contract remains consistent across multiple support scenarios.
 
 ---
 
