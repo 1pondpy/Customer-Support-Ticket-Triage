@@ -1,186 +1,237 @@
 # Customer Support Ticket Triage
 
-## Overview
+> **Version:** v0.1.0 – Walking Skeleton & Base RAG
 
-Customer Support Ticket Triage is an AI-ready backend service designed to classify customer support tickets and generate structured responses.
+Customer Support Ticket Triage is an AI-ready backend service designed to classify customer support tickets, retrieve relevant Knowledge Base policies, and generate structured triage responses.
 
-This iteration (**v0.1.0 – Walking Skeleton**) focuses on delivering a working backend API, system architecture, and data validation without integrating a real Large Language Model (LLM).
+This first iteration delivers a functional backend API with request validation, modular architecture, environment configuration, and a Retrieval-Augmented Generation (RAG) policy chunking service.
 
 ---
 
-## Agent Design
+## Table of Contents
 
-The current implementation uses a **Mock Triage Agent** to simulate future AI behavior while keeping the system functional.
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Features](#features)
+- [Project Structure](#project-structure)
+- [Workflow](#workflow)
+- [Environment Configuration](#environment-configuration)
+- [Repository Hygiene](#repository-hygiene)
+- [Routing & Triage Design](#routing--triage-design)
+- [API Endpoint](#api-endpoint)
+- [Running the Project](#running-the-project)
+- [Current Limitations](#current-limitations)
+- [Version](#version)
+- [Authors](#authors)
 
-### Responsibilities
+---
 
-- Receive customer support tickets
-- Validate requests using Pydantic schemas
-- Perform mock ticket classification
-- Generate predefined structured responses
-- Return JSON output
+# Overview
 
-### Current Workflow
+The system is designed as a modular backend that can later integrate Large Language Models (LLMs) without changing the public API.
 
-```text
+Current implementation includes:
+
+- FastAPI REST API
+- Pydantic validation
+- Mock Triage Agent
+- Policy Chunking Service
+- Environment configuration
+- Swagger documentation
+
+---
+
+# Architecture
+
+## Current Architecture
+
+```
 Client
    │
 POST /tickets/triage
    │
 FastAPI Router
    │
-Pydantic Validation
+Pydantic Validation (TicketInput)
    │
-Mock Triage Agent
+Mock Triage Service
+        +
+RAG Policy Chunking Service
    │
-Structured JSON Response
+Structured JSON Response (TriageResult)
 ```
 
-### Future Architecture
+---
 
-The Mock Agent will later be replaced by an AI-powered workflow.
+## Future Architecture
 
-```text
+The current Mock Triage Agent will be replaced by an AI-powered multi-agent workflow.
+
+```
 Client
    │
 FastAPI
    │
 Triage Agent
-   ├── Retrieve Knowledge (RAG)
+   ├── Retrieve Knowledge (RAG / Vector DB)
    ├── Generate Response (LLM)
-   └── Judge Response Quality
+   └── Judge Response Quality (LLM-as-a-Judge)
 ```
 
-This modular architecture allows future AI components to be integrated without changing the public API.
+This architecture enables future AI components to be integrated without changing the API contract.
 
 ---
 
-## Features
+# Features
 
-- FastAPI backend
-- Pydantic request/response schemas
-- Mock ticket classification
-- Structured JSON responses
-- Interactive Swagger UI (`/docs`)
-- RESTful API endpoint
+- FastAPI asynchronous backend
+- REST API endpoint
+- Pydantic request/response validation
+- Environment configuration using `python-dotenv`
+- Secure API key management
+- Policy ingestion service
+- Text chunking for RAG
+- Prompt template with delimiters
+- Interactive Swagger UI
+- Verified API contract
+- Modular service architecture
 
 ---
 
-## Project Structure
+# Project Structure
 
-```text
+```
 customer-support-ticket-triage/
 │
 ├── app/
 │   ├── api/
-│   ├── models/
-│   ├── schemas/
+│   │   └── routes.py
+│   │
+│   ├── services/
+│   │   ├── triage_service.py
+│   │   └── rag_service.py
+│   │
+│   ├── schemas.py
+│   ├── config.py
 │   └── main.py
 │
 ├── data/
-│   ├── sample.csv
-│   └── twcs.csv
+│   ├── policies/
+│   │   ├── routing_policy.txt
+│   │   ├── sla_policy.txt
+│   │   ├── billing_policy.txt
+│   │   └── technical_policy.txt
+│   │
+│   ├── prompt_template.txt
+│   └── sample.csv
 │
 ├── .env.example
+├── .gitignore
 ├── requirements.txt
 └── README.md
 ```
 
 ---
 
-## Environment Configuration
+# Workflow
 
-Configuration values are isolated from the application source code.
+Current processing pipeline:
 
-- `.env.example` provides the required environment variable template.
-- `.env` should remain local and is excluded using `.gitignore`.
-- Future API keys (OpenAI, vector database, etc.) will be stored in `.env`.
-
----
-
-## Repository Hygiene
-
-The repository includes only lightweight sample datasets.
-
-```text
-data/
-├── sample.csv
-└── twcs.csv
+```
+Receive Ticket
+        │
+        ▼
+Validate Request
+(Pydantic)
+        │
+        ▼
+Policy Chunk Retrieval
+(RAG Service)
+        │
+        ▼
+Mock Ticket Classification
+        │
+        ▼
+Generate Structured Response
+(TriageResult)
 ```
 
-Both datasets are trimmed to approximately the first **1,000 rows** to keep repository size manageable.
+---
+
+# Environment Configuration
+
+Application configuration is isolated from the source code.
+
+### `.env.example`
+
+```env
+OPENAI_API_KEY=
+GEMINI_API_KEY=
+```
+
+### Setup
+
+Copy:
+
+```bash
+cp .env.example .env
+```
+
+Then configure your API keys.
+
+Configuration values are centrally loaded by:
+
+```
+app/config.py
+```
 
 ---
 
-## Routing & Triage Design Matrix
+# Repository Hygiene
 
-### Priority & Escalation Logic
+The repository includes processed policy documents and sample datasets.
 
-- **P1**
-  - Premium customers
-  - Critical or urgent issues
-  - Automatically escalated
+```
+data/
+├── policies/
+└── sample.csv
+```
 
-- **P2–P4**
-  - Standard tickets
-  - Routed based on detected category
-
-### Queue Assignment
-
-| Category | Assigned Queue |
-|----------|----------------|
-| Technical | `tech_support_queue` |
-| Billing | `billing_default_queue` |
-| General | `general_support_queue` |
+The dataset has been trimmed and validated to maintain a manageable repository size while preserving compatibility with ticket metadata.
 
 ---
 
-## API Endpoint
+# Routing & Triage Design
 
-### POST `/tickets/triage`
+## Priority & Escalation
+
+| Priority | Description | Escalation |
+|-----------|-------------|------------|
+| P1 | Enterprise customer with outage, security issue, or critical bug | ✅ Yes |
+| P2–P4 | Standard support requests | No |
+
+---
+
+## Queue Assignment
+
+| Category | Queue |
+|-----------|----------------------------|
+| Technical | tech_support_queue |
+| Billing | billing_default_queue |
+| Billing (Emergency) | billing_emergency_queue |
+| General | general_support_queue |
+
+---
+
+# API Endpoint
+
+## POST `/tickets/triage`
 
 Accepts a customer support ticket and returns a structured triage result.
 
-### Sample Request
-
-```json
-{
-  "subject": "Urgent: Billing discrepancy on my premium account",
-  "body": "I noticed an incorrect charge on my invoice this month. Please resolve this immediately.",
-  "customer_tier": "premium",
-  "metadata": {
-    "source": "twitter",
-    "browser": "chrome"
-  }
-}
-```
-
-### Sample Response
-
-```json
-{
-  "category": "billing",
-  "sub_intent": "dispute_charge",
-  "priority": "P1",
-  "assigned_queue": "billing_emergency_queue",
-  "industry": "e-commerce",
-  "suggested_macro_id": "macro_billing_premium_refund",
-  "internal_notes": "Mocked: Premium customer billing conflict escalated for manual review.",
-  "policy_citations": [
-    "policy_billing_v2_section3"
-  ],
-  "confidence": 0.95,
-  "escalate": true
-}
-```
-
 ---
 
-## Sample Execution Test (API Contract Verification)
-
-The following example demonstrates a successful execution of the `POST /tickets/triage` endpoint using the current mock implementation. This verifies that the API contract defined by the Pydantic schemas is correctly processed and returns the expected structured JSON response.
-
-### Request
+## Sample Request
 
 ```json
 {
@@ -194,9 +245,9 @@ The following example demonstrates a successful execution of the `POST /tickets/
 }
 ```
 
-### Response
+---
 
-**HTTP Status:** `200 OK`
+## Sample Response
 
 ```json
 {
@@ -215,62 +266,95 @@ The following example demonstrates a successful execution of the `POST /tickets/
 }
 ```
 
-### Verification
+---
 
-- Request payload successfully validated using **Pydantic**.
-- The API returned **HTTP 200 OK**.
-- The Mock Triage Agent generated a structured response following the `TriageResult` schema.
-- The endpoint successfully demonstrates the expected API contract for future AI integration.
+# API Contract Verification
+
+The endpoint has been verified to ensure compatibility with the defined Pydantic schemas.
+
+### Verification Results
+
+- Request successfully validated using `TicketInput`
+- Supported customer tiers:
+  - `free`
+  - `pro`
+  - `enterprise`
+- Returned **HTTP 200 OK**
+- Response conforms to `TriageResult`
+- Verified public API contract for future LLM integration
 
 ---
 
-## Running the Project
+# Running the Project
 
-### Install dependencies
+## 1. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Start the server
+---
+
+## 2. Configure environment
+
+```bash
+cp .env.example .env
+```
+
+Add your API keys.
+
+---
+
+## 3. Start the server
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-### Open Swagger UI
+---
 
-```text
+## 4. Open Swagger UI
+
+```
 http://127.0.0.1:8000/docs
 ```
 
 ---
 
-## Current Limitations
+# Current Limitations
 
-- No real LLM integration
-- No Retrieval-Augmented Generation (RAG)
-- No multi-agent orchestration
-- No response evaluation (Judge Agent)
-- Mock responses only
+The current release uses a mock implementation for ticket classification.
 
-These features will be implemented in future iterations.
+Upcoming improvements include:
 
----
-
-## Version
-
-**v0.1.0 — Walking Skeleton**
+- Live LLM integration
+- Vector database retrieval
+- Semantic search embeddings
+- Multi-agent orchestration
+- LLM-as-a-Judge evaluation
+- Automatic policy ranking
 
 ---
 
-## Authors
+# Version
+
+**v0.1.0 — Walking Skeleton & Base RAG**
+
+---
+
+# Authors
 
 **Group 4 — SCI19 3914 & SCI19 3934**
 
 | Student ID | Name |
-|------------|------|
+|------------|--------------------------------|
 | B6722241 | นางสาวลลิตา ร่มลำดวน |
 | B6735036 | นายพัชรพล ลาภชุ่มศรี |
 | B6739324 | นายเจษฎา โพธิ์ราช |
 | B6739393 | นางสาวนิจจารีย์ ระดาบุตร |
+
+---
+
+## License
+
+This project was developed for academic purposes as part of the SCI19 3914 & SCI19 3934 coursework.
