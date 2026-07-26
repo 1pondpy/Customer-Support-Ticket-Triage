@@ -163,9 +163,17 @@ Application configuration is isolated from the source code.
 ### `.env.example`
 
 ```env
-OPENAI_API_KEY=
+# Application Settings
+APP_NAME="Customer Support Ticket Triage"
+APP_ENV=development
+APP_PORT=8000
+
+# Gemini API Configuration
 GEMINI_API_KEY=
-```
+MODEL_NAME=gemini-1.5-flash
+
+# Logging
+LOG_LEVEL=INFO
 
 ### Setup
 
