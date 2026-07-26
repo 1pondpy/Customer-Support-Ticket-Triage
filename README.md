@@ -1,7 +1,5 @@
 # Customer Support Ticket Triage
 
-> **Version:** v0.1.0 – Walking Skeleton & Base RAG
-
 Customer Support Ticket Triage is an AI-ready backend service designed to classify customer support tickets, retrieve relevant Knowledge Base policies, and generate structured triage responses.
 
 This first iteration delivers a functional backend API with request validation, modular architecture, environment configuration, and a Retrieval-Augmented Generation (RAG) policy chunking service.
