@@ -409,6 +409,6 @@ Upcoming improvements include:
 
 This project was developed for academic purposes as part of the SCI19 3914 & SCI19 3934 coursework.
 
-Co-authored-by: sosbugsbunny-byte <sosbugsbunny-byte@users.noreply.github.com>
-Co-authored-by: Jupiterxz <Jupiterxz@users.noreply.github.com>
-Co-authored-by: valen2004-citizen <valen2004-citizen@users.noreply.github.com>
+- Co-authored-by: sosbugsbunny-byte <sosbugsbunny-byte@users.noreply.github.com>
+- Co-authored-by: Jupiterxz <Jupiterxz@users.noreply.github.com>
+- Co-authored-by: valen2004-citizen <valen2004-citizen@users.noreply.github.com>
