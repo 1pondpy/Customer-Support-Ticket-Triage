@@ -43,21 +43,7 @@ Current implementation includes:
 
 ## Current Architecture
 
-```
-Client
-   │
-POST /tickets/triage
-   │
-FastAPI Router
-   │
-Pydantic Validation (TicketInput)
-   │
-Mock Triage Service
-        +
-RAG Policy Chunking Service
-   │
-Structured JSON Response (TriageResult)
-```
+![System Architecture Diagram](docs/architecture_diagram.png)
 
 ---
 
