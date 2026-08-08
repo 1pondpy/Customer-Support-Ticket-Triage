@@ -43,26 +43,7 @@ Current implementation includes:
 
 ## Current Architecture
 
-![System Architecture Diagram](docs/architecture_diagram.png)
-
----
-
-## Future Architecture
-
-The current Mock Triage Agent will be replaced by an AI-powered multi-agent workflow.
-
-```
-Client
-   │
-FastAPI
-   │
-Triage Agent
-   ├── Retrieve Knowledge (RAG / Vector DB)
-   ├── Generate Response (LLM)
-   └── Judge Response Quality (LLM-as-a-Judge)
-```
-
-This architecture enables future AI components to be integrated without changing the API contract.
+![Architecture Diagram](docs/architecture_diagram.png)
 
 ---
 
