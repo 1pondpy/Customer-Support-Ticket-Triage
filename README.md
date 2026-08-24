@@ -43,7 +43,7 @@ Current implementation includes:
 
 ## Current Architecture
 
-![Architecture Diagram](docs/architecture_diagram.png)
+![Architecture Diagram](docs/architecture-diagram.png)
 
 ---
 
