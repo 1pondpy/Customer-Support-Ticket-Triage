@@ -1,0 +1,98 @@
+[
+  {
+    "id": "gold_01",
+    "tweet_id": "119237",
+    "input": {
+      "subject": "iOS App Keyboard Crash and Notification Bug",
+      "body": "@AppleSupport causing the reply to be disregarded and the tapped notification under the keyboard is opened",
+      "customer_tier": "free",
+      "metadata": {"tweet_id": "119237", "author_id": "105834", "device": "iPhone"}
+    },
+    "ground_truth": {
+      "category": "technical",
+      "priority": "P3",
+      "assigned_queue": "tech_support_queue",
+      "escalate": false
+    }
+  },
+  {
+    "id": "gold_02",
+    "tweet_id": "119242",
+    "input": {
+      "subject": "Support Channel Outage - LiveChat & Phone Down",
+      "body": "@VirginTrains I still haven't heard & the number I'm directed to by phone is a dead end & the live chat doesn't work. Can someone call me?",
+      "customer_tier": "enterprise",
+      "metadata": {"tweet_id": "119242", "author_id": "105836", "source": "twitter"}
+    },
+    "ground_truth": {
+      "category": "technical",
+      "priority": "P1",
+      "assigned_queue": "tech_support_queue",
+      "escalate": true
+    }
+  },
+  {
+    "id": "gold_03",
+    "tweet_id": "119256",
+    "input": {
+      "subject": "Spotify Premium Playback Skipping Issue",
+      "body": "@SpotifyCares Please help! Spotify Premium skipping through songs constantly on android tablet & bluetooth speaker. Tried everything!",
+      "customer_tier": "pro",
+      "metadata": {"tweet_id": "119256", "author_id": "105840", "platform": "Android"}
+    },
+    "ground_truth": {
+      "category": "technical",
+      "priority": "P3",
+      "assigned_queue": "tech_support_queue",
+      "escalate": false
+    }
+  },
+  {
+    "id": "gold_04",
+    "tweet_id": "119278",
+    "input": {
+      "subject": "Sprint Service Refund Request",
+      "body": "@sprintcare I service last 40 min sprint can I get a refund",
+      "customer_tier": "pro",
+      "metadata": {"tweet_id": "119278", "author_id": "105676"}
+    },
+    "ground_truth": {
+      "category": "billing",
+      "priority": "P2",
+      "assigned_queue": "billing_default_queue",
+      "escalate": false
+    }
+  },
+  {
+    "id": "gold_05",
+    "tweet_id": "119299",
+    "input": {
+      "subject": "Store Access Verification Code Issue",
+      "body": "@AppleSupport I need a new code for my I-store. I haven’t recd any but msg is too many sent. Help!",
+      "customer_tier": "free",
+      "metadata": {"tweet_id": "119299", "author_id": "105851"}
+    },
+    "ground_truth": {
+      "category": "account",
+      "priority": "P3",
+      "assigned_queue": "general_triage_queue",
+      "escalate": false
+    }
+  },
+  {
+    "id": "gold_06",
+    "tweet_id": "119315",
+    "input": {
+      "subject": "Store Policy Inquiry and ID Challenge Complaint",
+      "body": "Got id's @Tesco for buying one Adnams Broadside. Is being blind part of the job-spec? I am 35 and 99 kilos.",
+      "customer_tier": "free",
+      "metadata": {"tweet_id": "119315", "author_id": "105855"}
+    },
+    "ground_truth": {
+      "category": "general",
+      "priority": "P4",
+      "assigned_queue": "general_triage_queue",
+      "escalate": false
+    }
+  }
+]
