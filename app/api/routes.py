@@ -1,19 +1,23 @@
 from fastapi import APIRouter, Query
 from app.schemas.ticket import TicketInput
-from app.schemas.triage import TriageResult
+from app.schemas.triage import TriageResult, BatchTicketInput, BatchTriageResult
 from app.services.triage_service import triage_ticket_with_llm
-from app.services.rag_service import RAGService 
+from app.services.rag_service import RAGService
 
 router = APIRouter()
 
 @router.post("/tickets/triage", response_model=TriageResult)
 def triage(ticket: TicketInput):
-    # สลับจาก Mock เป็นการประมวลผลผ่าน LLM จริง + RAG Context
     return triage_ticket_with_llm(ticket)
 
-@router.post("/tickets/triage/batch")
-def triage_batch():
-    pass
+@router.post("/tickets/triage/batch", response_model=BatchTriageResult)
+def triage_batch(batch_input: BatchTicketInput):
+    # วนลูปประมวลผลตั๋วทีละใบ (Baseline ก่อนทำ Async ใน Step ถัดไป)
+    results = [triage_ticket_with_llm(ticket) for ticket in batch_input.tickets]
+    return BatchTriageResult(
+        total_processed=len(results),
+        results=results
+    )
 
 @router.get("/policies/search")
 def search_policies(query: str = Query(..., description="คำสำคัญที่ต้องการทดสอบค้นหาในคลังนโยบาย")):

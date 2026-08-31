@@ -1,5 +1,6 @@
-from pydantic import BaseModel
-from typing import Literal
+from pydantic import BaseModel, Field
+from typing import Literal, List
+from app.schemas.ticket import TicketInput
 
 class TriageResult(BaseModel):
     category: str
@@ -11,3 +12,10 @@ class TriageResult(BaseModel):
     policy_citations: list[str]
     confidence: float
     escalate: bool
+    
+class BatchTicketInput(BaseModel):
+    tickets: List[TicketInput] = Field(..., description="รายการตั๋วสนับสนุนลูกค้าที่ต้องการประมวลผลพร้อมกัน")
+
+class BatchTriageResult(BaseModel):
+    total_processed: int = Field(..., description="จำนวนตั๋วที่ประมวลผลทั้งหมด")
+    results: List[TriageResult] = Field(..., description="รายการผลลัพธ์การคัดแยกตั๋ว")
