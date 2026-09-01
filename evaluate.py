@@ -39,6 +39,7 @@ def run_evaluation():
 
         print(f"[{idx}/{total_cases}] Ticket ID: {item.get('id', 'N/A')} ({ticket.subject[:40]}...)")
         print(f"   -> Result: Category={'✅' if cat_ok else '❌'} | Priority={'✅' if pri_ok else '❌'} | Queue={'✅' if que_ok else '❌'} | Escalate={'✅' if esc_ok else '❌'} ({latency}s)")
+        time.sleep(6)
 
     # สรุป Metrics
     cat_acc = (category_matches / total_cases) * 100
