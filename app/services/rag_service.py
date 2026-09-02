@@ -25,10 +25,20 @@ class RAGService:
                 with open(filepath, "r", encoding="utf-8") as f:
                     content = f.read()
                     
-                # หั่นข้อความแบบช่วงคงที่ (Fixed-size Window) ทีละ 300 ตัวอักษร
+                # วนลูปแบ่ง content ออกเป็น Chunk ตามขนาดที่กำหนดใน chunk_size
+                # range(0, len(content), chunk_size)
+                # = เริ่มที่ตำแหน่ง 0 ไปจนถึงความยาวของ content
+                # โดยเพิ่มตำแหน่งครั้งละ chunk_size
                 for i in range(0, len(content), chunk_size):
+                    
+                    # ตัดข้อความตั้งแต่ตำแหน่ง i ไปจนถึง i + chunk_size
+                    # .strip() ใช้ลบช่องว่างหรือขึ้นบรรทัดใหม่ที่อยู่ต้นและท้ายข้อความ
                     chunk_text = content[i:i + chunk_size].strip()
+                    
+                    # ตรวจสอบว่า Chunk นี้มีข้อความอยู่จริงหรือไม่
+                    # ถ้าไม่ใช่ข้อความว่าง จึงนำไปเก็บใน chunks
                     if chunk_text:
+                        # เก็บข้อมูลของ Chunk ในรูปแบบ Dictionary
                         chunks.append({
                             "source": filename,  # บันทึกชื่อไฟล์ต้นทางสำหรับทำ Grounding / Policy Citations
                             "text": chunk_text   # ข้อความเนื้อหาของ Chunk
