@@ -2,17 +2,18 @@ import os
 
 class RAGService:
     def __init__(self, policy_dir: str = "data/policies"):
+        """กำหนดตำแหน่งโฟลเดอร์นโยบาย และโหลดตัดชิ้นส่วนข้อความ (Chunks) ทันทีที่สร้าง Service"""
         self.policy_dir = policy_dir
-        # ปรับ Path อัตโนมัติหากเรียกจากตำแหน่งที่ต่างกัน
+        
+        # ป้องกันปัญหา Relative Path: ตรวจสอบและถอย Path 1 ระดับหากรันคำสั่งจากโฟลเดอร์ app/
         if not os.path.exists(self.policy_dir) and os.path.exists(f"../{self.policy_dir}"):
             self.policy_dir = f"../{self.policy_dir}"
             
+        # อ่านไฟล์นโยบายทั้งหมดและสับแบ่งข้อความเป็น Chunks เก็บไว้ในหน่วยความจำ
         self.chunks = self.load_and_chunk_policies()
 
     def load_and_chunk_policies(self, chunk_size: int = 300) -> list[dict]:
-        """
-        โหลดไฟล์นโยบายทั้งหมดในโฟลเดอร์ และทำการสับย่อยข้อความออกมาเป็น Chunks
-        """
+        """อ่านไฟล์ .txt ทั้งหมดใน policy_dir แล้วหั่นข้อความออกเป็นท่อนย่อยตามขนาด chunk_size"""
         chunks = []
         if not os.path.exists(self.policy_dir):
             print(f"❌ Error: Directory '{self.policy_dir}' not found.")
@@ -24,20 +25,18 @@ class RAGService:
                 with open(filepath, "r", encoding="utf-8") as f:
                     content = f.read()
                     
-                # สับย่อยข้อความตามขนาด chunk_size
+                # หั่นข้อความแบบช่วงคงที่ (Fixed-size Window) ทีละ 300 ตัวอักษร
                 for i in range(0, len(content), chunk_size):
                     chunk_text = content[i:i + chunk_size].strip()
                     if chunk_text:
                         chunks.append({
-                            "source": filename,
-                            "text": chunk_text
+                            "source": filename,  # บันทึกชื่อไฟล์ต้นทางสำหรับทำ Grounding / Policy Citations
+                            "text": chunk_text   # ข้อความเนื้อหาของ Chunk
                         })
         return chunks
 
     def search_policies(self, query: str) -> list[dict]:
-        """
-        ค้นหา Chunks ที่มีคำสำคัญ (Keyword Match) ตรงกับคำค้นหา
-        """
+        """ค้นหา Chunks ที่มีคำสำคัญ (Keyword Match) ตรงกับ Query โดยไม่สนใจตัวพิมพ์เล็ก-ใหญ่"""
         results = []
         query_lower = query.lower()
         for chunk in self.chunks:
@@ -46,12 +45,15 @@ class RAGService:
         return results
 
 
-# 💡 ประกาศ ฟังก์ชันโดด ด้านนอกคลาสไว้ด้วย เพื่อรองรับการเรียกใช้แบบฟังก์ชันตรงๆ (Backward Compatibility)
+# --- ส่วนฟังก์ชันเสริมภายนอกคลาส เพื่อรองรับโค้ดเก่าที่เรียกใช้แบบฟังก์ชันเดี่ยว (Backward Compatibility) ---
+
 def load_and_chunk_policies(policy_dir: str = "data/policies", chunk_size: int = 300) -> list[dict]:
+    """ฟังก์ชัน Wrapper สำหรับเรียกสร้าง RAGService และคืนค่ารายการ Chunks โดยตรง"""
     service = RAGService(policy_dir=policy_dir)
     return service.chunks
 
 def search_policies(query: str, chunks: list[dict]) -> list[dict]:
+    """ฟังก์ชัน Wrapper สำหรับค้นหาคำสำคัญจากรายการ Chunks ที่ส่งเข้ามา"""
     results = []
     query_lower = query.lower()
     for chunk in chunks:
@@ -60,13 +62,13 @@ def search_policies(query: str, chunks: list[dict]) -> list[dict]:
     return results
 
 
-# 🧪 บล็อกสำหรับทดสอบรันไฟล์นี้โดยตรงผ่าน Terminal
+# --- บล็อกทดสอบการทำงานของ RAG Ingestion และ Keyword Retrieval ผ่าน Terminal ---
 if __name__ == "__main__":
     rag = RAGService()
     print(f"📂 Loaded policies from: {rag.policy_dir}")
     print(f"✅ Total Chunks Loaded: {len(rag.chunks)}")
 
-    # ทดสอบค้นหาคำว่า billing
+    # ยิงทดสอบค้นหาคำว่า billing ว่าดึงข้อมูลนโยบายออกมาได้ครบถ้วนหรือไม่
     results = rag.search_policies("billing")
     print(f"\n🔍 Found {len(results)} matching chunks for 'billing':\n")
     for r in results:
