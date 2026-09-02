@@ -1,3 +1,7 @@
+## ขั้นตอนที่ 1: เตรียมตำแหน่งและป้องกัน Path ผิดพลาด (__init__)
+## ขั้นตอนที่ 2: โหลดและหั่นเอกสารเป็นท่อนย่อย (load_and_chunk_policies)
+## ขั้นตอนที่ 3: ค้นหาข้อความด้วยคำสำคัญ (search_policies)
+
 import os
 
 class RAGService:
@@ -83,3 +87,5 @@ if __name__ == "__main__":
     print(f"\n🔍 Found {len(results)} matching chunks for 'billing':\n")
     for r in results:
         print(f"- [{r['source']}] {r['text'][:100]}...")
+        
+    
