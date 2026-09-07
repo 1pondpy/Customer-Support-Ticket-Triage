@@ -17,7 +17,7 @@ def run_evaluation():
     escalation_matches = 0
     latencies = []
 
-    for idx, item in enumerate(gold_data, 1):
+    for idx, item in enumerate(gold_data, 1): ## วนลูปประมวลผลแต่ละตั๋วในชุดข้อมูลทองคำ โดยใช้ enumerate เพื่อให้ได้ทั้งดัชนี (idx) และข้อมูลตั๋ว (item), enumerate คือฟังก์ชันที่ใช้ในการวนลูปพร้อมกับนับจำนวนครั้งที่วนลูปไปแล้ว โดย idx จะเริ่มจาก 1
         ticket = TicketInput(**item["input"])
         ground_truth = item["ground_truth"]
 
@@ -45,7 +45,7 @@ def run_evaluation():
     pri_acc = (priority_matches / total_cases) * 100
     que_acc = (queue_matches / total_cases) * 100
     esc_acc = (escalation_matches / total_cases) * 100
-    avg_lat = round(sum(latencies) / len(latencies), 2)
+    avg_lat = round(sum(latencies) / len(latencies), 2) ## ,2 คือปัดเศษทศนิยม 2 ตำแหน่ง
 
     print("\n" + "="*50)
     print("📊 MULTI-AGENT EVALUATION SUMMARY")

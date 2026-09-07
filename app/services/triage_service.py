@@ -80,7 +80,7 @@ def get_specialist_instruction(domain: str) -> str:
             "Map category to 'general', assign sub_intent, and set assigned_queue to 'general_triage_queue'."
         )
     }
-    return instructions.get(domain, instructions["general"])
+    return instructions.get(domain, instructions["general"]) ## หากไม่ตรงกับโดเมนใด ๆ ให้ใช้คำสั่งของ General Support เป็นค่าเริ่มต้น
 
 # ---------------------------------------------------------
 # 4. กลไกกฎควบคุม SLA และความเร่งด่วน (Deterministic SLA Engine)
@@ -118,7 +118,7 @@ def triage_ticket_with_llm(ticket: TicketInput) -> TriageResult:
     domain = supervisor_route_domain(ticket)
     
     # ขั้นตอนที่ 2: ดึงชิ้นส่วนนโยบายที่ตรงกับข้อความตั๋วผ่านระบบ RAG (Policy Grounding)
-    search_query = f"{ticket.subject} {ticket.body} {domain}"
+    search_query = f"{ticket.subject} {ticket.body} {domain}" ## รวม Subject, Body และ Domain เพื่อเพิ่มความแม่นยำในการค้นหา Chunks
     try:
         retrieved_chunks = rag_service.search_policies(query=search_query, top_k=3)
         context_text = "\n\n".join([f"[{chunk['source']}]\n{chunk['text']}" for chunk in retrieved_chunks])
@@ -131,7 +131,7 @@ def triage_ticket_with_llm(ticket: TicketInput) -> TriageResult:
     # ขั้นตอนที่ 3: เลือก Prompt ประจำสายงานและประกอบข้อความตั๋วภายใต้กรอบ Delimiters
     specialist_prompt = get_specialist_instruction(domain)
     
-    ticket_payload = {
+    ticket_payload = {  ## สร้าง Payload ของตั๋วลูกค้าในรูปแบบ JSON เพื่อส่งไปยัง LLM
         "subject": ticket.subject,
         "body": ticket.body,
         "customer_tier": ticket.customer_tier,
@@ -139,12 +139,12 @@ def triage_ticket_with_llm(ticket: TicketInput) -> TriageResult:
     }
 
     # วางกรอบ Delimiters ชัดเจนเพื่อแยกบริบทนโยบายออกจากตั๋วลูกค้า ป้องกันปัญหาภาพหลอน (Hallucination)
-    user_content = f"""=== RETRIEVED POLICIES CONTEXT ===
-{context_text}
+    user_content = f""" === RETRIEVED POLICIES CONTEXT ===
+                                {context_text}
 
-=== INCOMING TICKET ===
-{json.dumps(ticket_payload, ensure_ascii=False, indent=2)}
-"""
+                        === INCOMING TICKET ===
+                                {json.dumps(ticket_payload, ensure_ascii=False, indent=2)}
+                    """
 
     # ขั้นตอนที่ 4: ส่งประมวลผลผ่าน Gemini API บังคับโครงสร้างผลลัพธ์เป็น JSON และคุมความเสถียร
     client = get_client()
@@ -183,7 +183,7 @@ def triage_ticket_with_llm(ticket: TicketInput) -> TriageResult:
 # 6. ส่วนประมวลผลแบบอะซิงโครนัส (Async Non-blocking Wrapper)
 # ---------------------------------------------------------
 
-async def triage_ticket_async(ticket: TicketInput) -> TriageResult:
+async def triage_ticket_async(ticket: TicketInput) -> TriageResult: ## คิองฟังก์ชัน triage_ticket_async ที่เป็นแบบ Asynchronous เพื่อรองรับการประมวลผลหลายตั๋วพร้อมกัน
     """แปลงการประมวลผลให้เป็นแบบ Non-blocking ผ่าน ThreadPool เพื่อรองรับการทำงานแบบ Batch"""
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, triage_ticket_with_llm, ticket)
