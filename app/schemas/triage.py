@@ -6,6 +6,7 @@ class TriageResult(BaseModel):
     sub_intent: str
     priority: Literal["P1", "P2", "P3", "P4"]
     assigned_queue: str
+    industry: str | None = None
     suggested_macro_id: str | None
     internal_notes: str
     policy_citations: list[str]
