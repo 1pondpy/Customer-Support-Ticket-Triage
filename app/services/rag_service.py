@@ -59,24 +59,7 @@ class RAGService:
                 if len(results) >= top_k:
                     break
         return results
-
-
-    # --- ส่วนฟังก์ชันเสริมภายนอกคลาส เพื่อรองรับโค้ดเก่าที่เรียกใช้แบบฟังก์ชันเดี่ยว (Backward Compatibility) ---
-
-    def load_and_chunk_policies(policy_dir: str = "data/policies", chunk_size: int = 300) -> list[dict]:
-        """ฟังก์ชัน Wrapper สำหรับเรียกสร้าง RAGService และคืนค่ารายการ Chunks โดยตรง"""
-        service = RAGService(policy_dir=policy_dir)
-        return service.chunks
-
-    def search_policies(query: str, chunks: list[dict]) -> list[dict]:
-        """ฟังก์ชัน Wrapper สำหรับค้นหาคำสำคัญจากรายการ Chunks ที่ส่งเข้ามา"""
-        results = []
-        query_lower = query.lower()
-        for chunk in chunks:
-            if query_lower in chunk["text"].lower():
-                results.append(chunk)
-        return results
-
+    ## top_k คือจำนวนสูงสุดของผลลัพธ์ที่ต้องการดึงออกมา เช่น top_k=3 หมายถึงดึง Chunk ที่ตรงกับ Query มากที่สุด 3 ชิ้นแรก เช่น ถ้าค้นหาคำว่า "billing" แล้วเจอ 5 ชิ้น แต่ top_k=3 ก็จะได้แค่ 3 ชิ้นแรกที่ตรงกับคำค้นหา
 
     # --- บล็อกทดสอบการทำงานของ RAG Ingestion และ Keyword Retrieval ผ่าน Terminal ---
     if __name__ == "__main__":
