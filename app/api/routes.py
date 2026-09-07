@@ -1,7 +1,9 @@
+import asyncio  # 1. นำเข้า asyncio
 from fastapi import APIRouter, Query
 from app.schemas.ticket import TicketInput
 from app.schemas.triage import TriageResult, BatchTicketInput, BatchTriageResult
-from app.services.triage_service import triage_ticket_with_llm
+# 2. นำเข้า triage_ticket_async มาใช้งาน
+from app.services.triage_service import triage_ticket_with_llm, triage_ticket_async
 from app.services.rag_service import RAGService
 
 router = APIRouter()
@@ -14,8 +16,9 @@ def triage(ticket: TicketInput): ## ticket เป็นตัวแปรขอ�
     return triage_ticket_with_llm(ticket) ## คำสั่งเรียกฟังก์ชันจาก triage_service.py
 
 @router.post("/tickets/triage/batch", response_model=BatchTriageResult) ## Batch คือ รับก้อน Array ที่หุ้มด้วยคีย์ tickets เช่น {"tickets": [ {ใบที่ 1}, {ใบที่ 2} ]} , 1 Request ต่อ หลายตั๋ว
-def triage_batch(batch_input: BatchTicketInput): ## ให้ fastapi ยึดโครงสร้างของข้อมูลขาเข้า ให้ตรงตาม Class ที่เราระบุไว้ คลาส BatchTicketInput
-    results = [triage_ticket_with_llm(ticket) for ticket in batch_input.tickets] ## ใช้ List Comprehension วนลูปประมวลผลตั๋วทุกใบในชุด Batch ทีละรายการแบบเรียงลำดับ
+async def triage_batch(batch_input: BatchTicketInput): ## ให้ fastapi ยึดโครงสร้างของข้อมูลขาเข้า ให้ตรงตาม Class ที่เราระบุไว้ คลาส BatchTicketInput
+    tasks = [triage_ticket_async(ticket) for ticket in batch_input.tickets]
+    results = await asyncio.gather(*tasks) ## ใช้ List Comprehension วนลูปประมวลผลตั๋วทุกใบในชุด Batch ทีละรายการแบบเรียงลำดับ
     return BatchTriageResult(
         total_processed=len(results), ## นับจำนวนข้อมูลในลิสต์ results ว่ารอบนี้ประมวลผลตั๋วสำเร็จไปทั้งหมดกี่ใบ
         results=results ## นำลิสต์ที่เก็บผลลัพธ์การคัดแยกตั๋ว (results ซึ่งข้างในคืออ็อบเจกต์ TriageResult ของแต่ละใบ) ผูกเข้ากับคีย์ results ของตัว Model

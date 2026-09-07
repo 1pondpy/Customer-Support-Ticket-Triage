@@ -61,33 +61,33 @@ class RAGService:
         return results
 
 
-# --- ส่วนฟังก์ชันเสริมภายนอกคลาส เพื่อรองรับโค้ดเก่าที่เรียกใช้แบบฟังก์ชันเดี่ยว (Backward Compatibility) ---
+    # --- ส่วนฟังก์ชันเสริมภายนอกคลาส เพื่อรองรับโค้ดเก่าที่เรียกใช้แบบฟังก์ชันเดี่ยว (Backward Compatibility) ---
 
-def load_and_chunk_policies(policy_dir: str = "data/policies", chunk_size: int = 300) -> list[dict]:
-    """ฟังก์ชัน Wrapper สำหรับเรียกสร้าง RAGService และคืนค่ารายการ Chunks โดยตรง"""
-    service = RAGService(policy_dir=policy_dir)
-    return service.chunks
+    def load_and_chunk_policies(policy_dir: str = "data/policies", chunk_size: int = 300) -> list[dict]:
+        """ฟังก์ชัน Wrapper สำหรับเรียกสร้าง RAGService และคืนค่ารายการ Chunks โดยตรง"""
+        service = RAGService(policy_dir=policy_dir)
+        return service.chunks
 
-def search_policies(query: str, chunks: list[dict]) -> list[dict]:
-    """ฟังก์ชัน Wrapper สำหรับค้นหาคำสำคัญจากรายการ Chunks ที่ส่งเข้ามา"""
-    results = []
-    query_lower = query.lower()
-    for chunk in chunks:
-        if query_lower in chunk["text"].lower():
-            results.append(chunk)
-    return results
+    def search_policies(query: str, chunks: list[dict]) -> list[dict]:
+        """ฟังก์ชัน Wrapper สำหรับค้นหาคำสำคัญจากรายการ Chunks ที่ส่งเข้ามา"""
+        results = []
+        query_lower = query.lower()
+        for chunk in chunks:
+            if query_lower in chunk["text"].lower():
+                results.append(chunk)
+        return results
 
 
-# --- บล็อกทดสอบการทำงานของ RAG Ingestion และ Keyword Retrieval ผ่าน Terminal ---
-if __name__ == "__main__":
-    rag = RAGService()
-    print(f"📂 Loaded policies from: {rag.policy_dir}")
-    print(f"✅ Total Chunks Loaded: {len(rag.chunks)}")
+    # --- บล็อกทดสอบการทำงานของ RAG Ingestion และ Keyword Retrieval ผ่าน Terminal ---
+    if __name__ == "__main__":
+        rag = RAGService()
+        print(f"📂 Loaded policies from: {rag.policy_dir}")
+        print(f"✅ Total Chunks Loaded: {len(rag.chunks)}")
 
-    # ยิงทดสอบค้นหาคำว่า billing ว่าดึงข้อมูลนโยบายออกมาได้ครบถ้วนหรือไม่
-    results = rag.search_policies("billing")
-    print(f"\n🔍 Found {len(results)} matching chunks for 'billing':\n")
-    for r in results:
-        print(f"- [{r['source']}] {r['text'][:100]}...")
+        # ยิงทดสอบค้นหาคำว่า billing ว่าดึงข้อมูลนโยบายออกมาได้ครบถ้วนหรือไม่
+        results = rag.search_policies("billing")
+        print(f"\n🔍 Found {len(results)} matching chunks for 'billing':\n")
+        for r in results:
+            print(f"- [{r['source']}] {r['text'][:100]}...")
+            
         
-    
