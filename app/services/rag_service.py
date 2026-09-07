@@ -11,7 +11,7 @@ class RAGService:
         
         # ป้องกันปัญหา Relative Path: ตรวจสอบและถอย Path 1 ระดับหากรันคำสั่งจากโฟลเดอร์ app/
         if not os.path.exists(self.policy_dir) and os.path.exists(f"../{self.policy_dir}"):
-            self.policy_dir = f"../{self.policy_dir}"
+            self.policy_dir = f"../{self.policy_dir}" ## ปรับ Path ให้ชี้ไปยังโฟลเดอร์ data/policies ที่อยู่ระดับเดียวกับ app/
             
         # อ่านไฟล์นโยบายทั้งหมดและสับแบ่งข้อความเป็น Chunks เก็บไว้ในหน่วยความจำ
         self.chunks = self.load_and_chunk_policies()

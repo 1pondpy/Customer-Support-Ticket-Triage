@@ -21,9 +21,8 @@ async def triage_batch(batch_input: BatchTicketInput): ## ให้ fastapi ย�
     results = await asyncio.gather(*tasks) ## รอให้ทุก Task ที่สร้างขึ้นเสร็จสิ้นพร้อมกัน และรวบรวมผลลัพธ์ทั้งหมดในลิสต์ results
     return BatchTriageResult(
         total_processed=len(results), ## นับจำนวนข้อมูลในลิสต์ results ว่ารอบนี้ประมวลผลตั๋วสำเร็จไปทั้งหมดกี่ใบ
-        results=results ## นำลิสต์ที่เก็บผลลัพธ์การคัดแยกตั๋ว (results ซึ่งข้างในคืออ็อบเจกต์ TriageResult ของแต่ละใบ) ผูกเข้ากับคีย์ results ของตัว Model
+        results=results ## นำลิสต์ที่เก็บผลลัพธ์การคัดแยกตั๋ว (results ซึ่งข้างในคืออ็อบเจกต์ TriageResult ของแต่ละใบ) ผูกเข้ากับคีย์ results ของตัว Model, Model คือ BatchTriageResult ที่เรากำหนดไว้ใน response_model
     )
-
 
 ## รับคำค้นหาผ่าน Query String เพื่อทดสอบการสืบค้น Chunks ก่อนส่งให้ AI ใน Rag Service
 @router.get("/policies/search")
