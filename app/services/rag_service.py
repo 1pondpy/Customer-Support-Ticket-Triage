@@ -49,13 +49,15 @@ class RAGService:
                         })
         return chunks
 
-    def search_policies(self, query: str) -> list[dict]:
-        """ค้นหา Chunks ที่มีคำสำคัญ (Keyword Match) ตรงกับ Query โดยไม่สนใจตัวพิมพ์เล็ก-ใหญ่"""
+    def search_policies(self, query: str, top_k: int = 3) -> list[dict]:
+        """ค้นหา Chunks ที่มีคำสำคัญตรงกับ Query และตัดเอาเฉพาะ top_k ลำดับแรก"""
         results = []
         query_lower = query.lower()
         for chunk in self.chunks:
             if query_lower in chunk["text"].lower():
                 results.append(chunk)
+                if len(results) >= top_k:
+                    break
         return results
 
 
