@@ -41,7 +41,7 @@ Current implementation includes:
 
 ## System Architecture
 
-![Architecture Diagram](docs/architecture-diagram.jpg)
+![Architecture Diagram](docs/architecture-diagram.png)
 
 ## Multi-Agent Workflow (Mixture-of-Experts)
 
