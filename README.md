@@ -1,13 +1,16 @@
 # Customer Support Ticket Triage
 
-Customer Support Ticket Triage is an AI-powered backend service designed to classify customer support tickets, retrieve relevant Knowledge Base policies, and generate structured triage responses.
+Customer Support Ticket Triage is an AI-powered backend service designed to classify incoming customer support tickets, ground reasoning in local Knowledge Base policies, and generate structured triage responses.
 
-This release delivers an asynchronous multi-agent backend API utilizing Google Gemini (`gemini-3.6-flash`), domain-specific specialist agents, parallel batch execution, and Retrieval-Augmented Generation (RAG) policy grounding.
+This release (**v1.0.0 "Demo Day"**) delivers an asynchronous, multi-agent Mixture-of-Experts (MoE) pipeline powered by Groq Cloud High-Speed Inference (\openai/gpt-oss-20b\), strict deterministic SLA enforcement, and a Grounding Judge Agent.
+
+---
 
 ## Table of Contents
 
 - [Overview](#overview)
 - [Architecture](#architecture)
+- [Specialist Agents & Routing Taxonomy](#specialist-agents--routing-taxonomy)
 - [Features](#features)
 - [Project Structure](#project-structure)
 - [Workflow](#workflow)
@@ -15,89 +18,105 @@ This release delivers an asynchronous multi-agent backend API utilizing Google G
 - [Repository Hygiene](#repository-hygiene)
 - [Routing & Triage Design](#routing--triage-design)
 - [API Endpoints](#api-endpoints)
-- [Evaluation Benchmark](#evaluation-benchmark)
+- [Evaluation Benchmark (Demo Day)](#evaluation-benchmark-demo-day)
 - [Sample Requests & Responses](#sample-requests--responses)
 - [Running the Project](#running-the-project)
-- [Current Limitations](#current-limitations)
+- [Current Limitations & Future Roadmap](#current-limitations--future-roadmap)
 - [Version](#version)
 - [Authors](#authors)
 
+---
+
 # Overview
 
-The system is designed as a modular backend utilizing Gemini LLM reasoning, Mixture-of-Experts (MoE) specialist agent routing, and local policy grounding.
+The system operates as a modular, high-throughput triage backend featuring:
 
-Current implementation includes:
+- **FastAPI Asynchronous REST API:** Engineered for low-latency request handling and non-blocking worker concurrency.
+- **Pydantic V2 Contract Validation:** Enforces strict payload verification for inbound tickets and outbound triage results.
+- **Multi-Agent Mixture-of-Experts (MoE):** Intent Router with regular expression weighted signals directing tickets to dedicated domain specialists.
+- **RAG Policy Ingestion & Citation Grounding:** Ingests local policy documents and attaches verifiable source citations to eliminate model hallucinations.
+- **Deterministic SLA & Priority Engine:** Evaluates customer tiers and outage signals using rule-based overrides (P1–P4).
+- **Judge Agent Grounding Verification:** Validates specialist citations against retrieved knowledge contexts.
+- **Automated Offline Evaluation Harness:** Validates performance against the 30-case Full Gold Dataset (\data/gold_dataset.json\).
 
-- FastAPI asynchronous REST API
-- Pydantic V2 schema validation
-- Supervisor Router + 4 Specialist Agents (Technical, Billing, Account, General)
-- SLA & Escalation Policy Engine (P1–P4 matrix)
-- Async Parallel Batch Processing (`asyncio.gather`)
-- Policy Ingestion and Text Chunking RAG Service
-- Automated Offline Evaluation Harness (`evaluate.py`)
-- Interactive Swagger UI documentation
+---
 
 # Architecture
 
 ## System Architecture
 
-![Architecture Diagram](docs/architecture-diagram.png)
+![Architecture Diagram](docs/architecture-diagram.jpg)
+
+---
 
 ## Multi-Agent Workflow (Mixture-of-Experts)
 
-```text
-                   [ Incoming Ticket / Batch ]
+\\	ext
+                     [ Incoming Ticket / Batch ]
                                 │
                                 ▼
-                     [ Supervisor Router ]
+                   [ Multi-Domain Intent Router ]
                                 │
-   ┌────────────────────┬───────┴────────────┬───────────────────┐
-   ▼                    ▼                    ▼                   ▼
-[Technical Agent]   [Billing Agent]      [Account Agent]     [General Agent]
-(Bugs/Outages)      (Refunds/Invoices)   (OTP/Auth/Access)   (Feedback/How-to)
-   │                    │                    │                   │
-   └────────────────────┼────────────────────┴───────────────────┘
-                        ▼
-             [ RAG Policy Grounding Context ]
+   ┌───────────────┬────────────┼────────────┬───────────────┐
+   ▼               ▼            ▼            ▼               ▼
+[Technical]    [Billing]     [Refund]    [Account]      [Shipping]
+[Security]     [Feedback]    [Other]
+   │               │            │            │               │
+   └───────────────┴────────────┼────────────┴───────────────┘
+                                │
+                                ▼
+                 [ RAG Policy Grounding Context ]
              (data/policies/*.txt Policy Retrieval)
-                        │
-                        ▼
-             [ SLA & Escalation Policy Engine ]
-             (P1-P4 Matrix & Outage Rule)
-                        │
-                        ▼
-             [ Validated Pydantic Result ]
-```
+                                │
+                                ▼
+              [ Domain Specialist LLM Reasoning ]
+                    (Groq: openai/gpt-oss-20b)
+                                │
+                                ▼
+               [ SLA & Priority Scorer Engine ]
+                 (P1-P4 Matrix & Outage Rules)
+                                │
+                                ▼
+                      [ Judge Agent Guard ]
+                 (Citation & Grounding Validator)
+                                │
+                                ▼
+                   [ Validated TriageResult ]
+\
+---
 
-### Specialist Agent Domains & Responsibilities
+# Specialist Agents & Routing Taxonomy
 
-- **Supervisor Router Agent:** Analyzes the core intent and customer tier from the incoming payload, delegating the ticket to the designated domain specialist.
-- **Technical Support Specialist Agent:** Specializes in software bugs, service disruptions, UI crashes, and hardware errors (`tech_support_queue`), grounded in `technical_policy.txt` and `routing_policy.txt`.
-- **Billing & Refund Specialist Agent:** Analyzes subscription issues, invoice discrepancies, duplicate charges, and refund eligibility (`billing_default_queue` / `refund_expert_queue`), grounded in `billing_policy.txt`.
-- **Account & Security Specialist Agent:** Manages authentication failures, OTP/verification code issues, password resets, and store access challenges (`account_security_queue`).
-- **General Customer Support Agent:** Handles feedback, how-to inquiries, and general queries (`general_triage_queue`).
+The system dynamically classifies tickets across **8 PRD-compliant domains**:
 
-### SLA & Escalation Policy Engine
+- **Intent Router Agent:** Employs regex weighted pattern matching and context collision guards to delegate tickets to the appropriate specialist.
+- **Technical Support Specialist:** Analyzes application bugs, crashes, outages, playback issues, and 500-series errors (\	ech_support_queue\).
+- **Billing Specialist:** Investigates recurring subscription disputes, invoice discrepancies, and double charges (\illing_default_queue\).
+- **Refund Specialist:** Evaluates return payment eligibility and cancellation refund requests (efund_expert_queue\).
+- **Account Specialist:** Handles login authentication, OTP/2FA delivery failures, credential resets, and store access locks (\ccount_security_queue\).
+- **Shipping & Logistics Specialist:** Tracks missing parcels, transit delays, and incorrect deliveries (\shipping_logistics_queue\).
+- **Security Incident Specialist:** Investigates data breaches, phishing attempts, credential compromises, and unauthorized account access (\security_incident_queue\).
+- **Customer Experience Feedback Agent:** Categorizes UI/UX suggestions, redesign feedback, and agent compliments (\customer_feedback_queue\).
+- **General Support Agent:** Resolves general inquiries, store opening schedules, and unclassified questions (\general_triage_queue\).
 
-- **Priority Determination:** Evaluates ticket severity and customer tier (`free`, `pro`, `enterprise`) to assign appropriate priority levels (`P1` to `P4`).
-- **Escalation Trigger:** Flags critical outage events or enterprise-level disruptions automatically (`escalate: true`).
-- **Policy Citation Traceability:** Enforces source grounding by populating `policy_citations` with the exact policy filenames used during classification.
+---
 
 # Features
 
-- FastAPI asynchronous backend with high concurrency
-- Multi-Agent supervisor orchestration pattern
-- Single (`/tickets/triage`) and Parallel Batch (`/tickets/triage/batch`) classification endpoints
-- Pydantic request/response schema validation matching PRD
-- Environment configuration using `python-dotenv`
-- Secure API key management
-- Policy ingestion and text chunking for RAG grounding
-- Automated evaluation harness (`evaluate.py`) against Gold Dataset
-- Interactive Swagger UI documentation (`/docs`)
+- High-throughput asynchronous backend built with FastAPI.
+- Multi-Agent MoE orchestration with deterministic SLA guardrails.
+- Endpoints for single ticket triage (\/tickets/triage\) and parallel batch processing (\/tickets/triage/batch\).
+- Deterministic P1 escalation engine targeting critical outages and enterprise tier disruptions.
+- Grounding Judge Agent ensuring zero policy citation hallucinations.
+- In-memory RAG policy retrieval engine with debug endpoint (\/policies/search\).
+- Full Gold Dataset offline test harness (\evaluate.py\) tracking PRD compliance metrics.
+- Interactive API documentation available via Swagger UI (\/docs\).
+
+---
 
 # Project Structure
 
-```text
+\\	ext
 customer-support-ticket-triage/
 │
 ├── app/
@@ -134,300 +153,239 @@ customer-support-ticket-triage/
 ├── eval_report.md
 ├── requirements.txt
 └── README.md
-```
+\
+---
 
 # Workflow
 
-## 1. Single Ticket Processing Pipeline
+## 1. Single Ticket Triage Pipeline (\POST /tickets/triage\)
 
-```text
+\\	ext
 Incoming Ticket Request (POST /tickets/triage)
-                    │
-                    ▼
-Validate Input Schema (TicketInput)
-                    │
-                    ▼
-Supervisor Router Identifies Domain
-(technical / billing / account / general)
-                    │
-                    ▼
-RAG Policy Retrieval (rag_service.py)
-(Retrieves relevant policy chunks)
-                    │
-                    ▼
-Specialist Agent Reasoning (Gemini LLM)
-                    │
-                    ▼
-SLA & Priority Escalation Engine
-(Evaluates Customer Tier & P1-P4)
-                    │
-                    ▼
-Return Structured JSON (TriageResult)
-```
+                     │
+                     ▼
+Validate Input Schema (TicketInput via Pydantic)
+                     │
+                     ▼
+Intent Router Agent (Regex Pattern Matching & Collision Guards)
+                     │
+                     ▼
+RAG Policy Retrieval (rag_service.py pulls top relevant chunks)
+                     │
+                     ▼
+Specialist Agent Reasoning (Groq API: openai/gpt-oss-20b)
+                     │
+                     ▼
+Deterministic SLA Engine (Evaluates Customer Tier & P1-P4 Matrix)
+                     │
+                     ▼
+Judge Agent (Verifies Citations against Knowledge Base Context)
+                     │
+                     ▼
+Return Structured JSON Response (TriageResult)
+\
+## 2. Parallel Batch Processing Pipeline (\POST /tickets/triage/batch\)
 
-## 2. Batch Processing Pipeline (`POST /tickets/triage/batch`)
-
-```text
-             Incoming Batch Request (BatchTicketInput)
-                              │
-                              ▼
-           Asynchronous Worker Dispatcher (asyncio.gather)
-           ┌─────────────────────┼─────────────────────┐
-           ▼                     ▼                     ▼
-    [Ticket 1 Triage]     [Ticket 2 Triage]     [Ticket N Triage]
-           │                     │                     │
-           └─────────────────────┼─────────────────────┘
-                              │
-                              ▼
-             Aggregated Response (BatchTriageResult)
-```
+\\	ext
+            Incoming Batch Request (BatchTicketInput)
+                               │
+                               ▼
+        Asynchronous Worker Dispatcher (asyncio.gather)
+        ┌──────────────────────┼──────────────────────┐
+        ▼                      ▼                      ▼
+ [Ticket 1 Triage]      [Ticket 2 Triage]      [Ticket N Triage]
+        │                      │                      │
+        └──────────────────────┼──────────────────────┘
+                               │
+                               ▼
+            Aggregated Response (BatchTriageResult)
+\
+---
 
 # Environment Configuration
 
-Application configuration is isolated from the source code.
+Application settings and API credentials are kept separate from code logic using \python-dotenv\.
 
-### `.env.example`
-
-```env
+### \.env.example
+\\env
 # Application Settings
 APP_NAME="Customer Support Ticket Triage"
 APP_ENV=development
 APP_PORT=8000
 
-# Gemini API Configuration
-GEMINI_API_KEY=
-MODEL_NAME=gemini-3.6-flash
+# Inference Engine Configuration (Groq Cloud API)
+GROQ_API_KEY=your_groq_api_key_here
+MODEL_NAME=openai/gpt-oss-20b
 
-# Logging
+# Logging Level
 LOG_LEVEL=INFO
-```
-
+\
 ### Setup
 
-```bash
+\\ash
 cp .env.example .env
-```
+\
+Populate \.env\ with your valid Groq API key (\gsk_...\). Configuration variables are loaded into the application context by \pp/config.py\.
 
-Configure your API keys in `.env`. Configuration values are centrally loaded by `app/config.py`.
+---
 
 # Repository Hygiene
 
-The repository contains processed policy documents, curated gold test datasets, and sample CSV data.
-
-```text
+\\	ext
 data/
 ├── policies/
 ├── gold_dataset.json
 └── sample.csv
-```
+\
+The repository includes cleaned policy guidelines, a 30-case Ground Truth Gold Dataset, and customer tweet samples from the instructor data pack.
 
-The dataset has been trimmed and validated to maintain a manageable repository size while preserving compatibility with ticket metadata.
+---
 
 # Routing & Triage Design
 
-## Priority & Escalation
+## Priority & Escalation Matrix
 
-| **Priority** | **Description** | **Escalation** |
-|---|---|---|
-| P1 | Enterprise customer with outage, security issue, or critical bug | ✅ Yes |
-| P2 | Pro tier customer or serious technical/billing issues | No |
-| P3–P4 | Free tier or standard support requests | No |
+| Priority | Criteria & Impact | Escalation | Target SLA |
+| :--- | :--- | :---: | :--- |
+| **P1** | Enterprise customer, regional outage, or security data breach | Yes | Response within 1 hour |
+| **P2** | Pro customer or high-impact billing/technical disruption | No | Response within 4 hours |
+| **P3** | Free customer standard inquiries or shipping tracking | No | Response within 12 hours |
+| **P4** | Low-urgency product feedback or general policy questions | No | Response within 24 hours |
 
-## Queue Assignment
+## Queue Routing Mapping
 
-| **Category** | **Queue** |
-|---|---|
-| Technical | `tech_support_queue` |
-| Billing | `billing_default_queue` |
-| Billing (Refund) | `refund_expert_queue` |
-| Account | `account_security_queue` |
-| General | `general_triage_queue` |
+| Category | Assigned Queue | Policy Reference |
+| :--- | :--- | :--- |
+| **Technical** | \	ech_support_queue\ | \	echnical_policy.txt\, outing_policy.txt\ |
+| **Billing** | \illing_default_queue\ | \illing_policy.txt\, outing_policy.txt\ |
+| **Refund** | efund_expert_queue\ | \illing_policy.txt\, outing_policy.txt\ |
+| **Account** | \ccount_security_queue\ | outing_policy.txt\ |
+| **Shipping** | \shipping_logistics_queue\ | outing_policy.txt\ |
+| **Security** | \security_incident_queue\ | \	echnical_policy.txt\, \sla_policy.txt\ |
+| **Feedback** | \customer_feedback_queue\ | outing_policy.txt\ |
+| **Other** | \general_triage_queue\ | outing_policy.txt\ |
+
+---
 
 # API Endpoints
 
-## 1. POST `/tickets/triage`
+### 1. POST \/tickets/triageReceives a single ticket payload and returns a validated triage classification.
 
-Accepts an individual customer support ticket and returns a structured triage result.
+### 2. POST \/tickets/triage/batchProcesses multiple tickets in parallel using non-blocking worker pools (\syncio.gather\).
 
-## 2. POST `/tickets/triage/batch`
+### 3. GET \/policies/searchDebug utility endpoint to inspect chunked retrieval contexts and test RAG query matching.
 
-Accepts a batch of customer support tickets and processes them concurrently using asynchronous execution (`asyncio.gather`).
+---
 
-## 3. GET `/policies/search`
+# Evaluation Benchmark (Demo Day)
 
-Provides interactive RAG debugging to search through chunked policy knowledge bases.
+Offline evaluation executed via \python evaluate.py\ across the **Full Gold Dataset (30 Cases)**:
 
-# Evaluation Benchmark
+| Metric | PRD Minimum Pass Threshold | Actual Score (v1.0.0) | Demo Day Status |
+| :--- | :---: | :---: | :---: |
+| **Category Accuracy** | >= 85.0% | **96.7%** (29/30) | PASSED |
+| **Priority Within 1-Level** | >= 80.0% | **96.7%** (29/30) | PASSED |
+| **Priority Exact Match** | Informational | **66.7%** (20/30) | Recorded |
+| **Queue Match Accuracy** | Informational | **96.7%** (29/30) | PASSED |
+| **Escalation Recall (TP)** | **100.0%** | **100.0%** (7/7) | PERFECT |
+| **Average Response Latency** | < 5.0s (Target) | **5.27s** | Fast |
 
-Automated evaluation executed via `python evaluate.py` against `data/gold_dataset.json` (6 curated multi-industry test cases):
+*Refer to [\eval_report.md\](eval_report.md) for detailed case-by-case analysis and failure mode breakdowns.*
 
-| **Metric** | **Target** | **Actual Score (v0.3.0)** | **Status** |
-|---|---:|---:|---|
-| **Category Accuracy** | >= 60.0% | **83.3%** (5/6) | 🎯 Exceeded |
-| **Priority Accuracy (P1–P4)** | >= 50.0% | **50.0%** (3/6) | ✅ Met |
-| **Queue Match Accuracy** | >= 50.0% | **50.0%** (3/6) | ✅ Met |
-| **Escalation Match Rate** | 100.0% | **100.0%** (6/6) | 🎯 Perfect |
-| **Average Latency** | < 10.0s | **6.15s** | ⚡ Fast |
-
-*Refer to* [`eval_report.md`](eval_report.md) *for detailed case breakdown.*
+---
 
 # Sample Requests & Responses
 
-## Single Triage Example (`POST /tickets/triage`)
+## Single Triage (\POST /tickets/triage\)
 
-### Request (`TicketInput`)
+### Request Body (\TicketInput\)
 
-```json
+\\json
 {
-  "subject": "App Interaction & Keyboard Bug",
-  "body": "@AppleSupport causing the reply to be disregarded and the tapped notification under the keyboard is opened",
-  "customer_tier": "free",
+  "subject": "System Outage - Payment Webhook Failure",
+  "body": "Outage alert: Our checkout webhook endpoints are returning 500 error code. Critical disruption for all customers!",
+  "customer_tier": "enterprise",
   "metadata": {
-    "device": "iPhone 13"
+    "api_version": "v3",
+    "region": "us-east-1"
   }
 }
-```
+\
+### Response Body (\TriageResult\)
 
-### Response (`TriageResult`)
-
-```json
+\\json
 {
   "category": "technical",
-  "sub_intent": "app_crash_bug",
-  "priority": "P2",
+  "sub_intent": "outage_webhook_failure",
+  "priority": "P1",
   "assigned_queue": "tech_support_queue",
   "industry": "technology",
-  "suggested_macro_id": "macro_ios_keyboard_troubleshoot",
-  "internal_notes": "[TECHNICAL Specialist]: User reporting UI overlay bug with keyboard notifications.",
+  "suggested_macro_id": "macro_tech_system_outage",
+  "internal_notes": "[TECHNICAL Expert]: Outage alert detected with 500 error codes. | Triggered P1/Escalation: Enterprise customer, outage, or security incident. | Verified by Judge Agent: Grounded with 2 policy source(s).",
   "policy_citations": [
-    "routing_policy.txt",
-    "technical_policy.txt"
+    "technical_policy.txt",
+    "sla_policy.txt"
   ],
   "confidence": 0.95,
-  "escalate": false
+  "escalate": true
 }
-```
-
-## Batch Triage Example (`POST /tickets/triage/batch`)
-
-### Request (`BatchTicketInput`)
-
-```json
-{
-  "tickets": [
-    {
-      "subject": "iPhone App Freeze",
-      "body": "The app freezes every time I tap on notifications after update.",
-      "customer_tier": "free",
-      "metadata": {
-        "device": "iPhone 13"
-      }
-    },
-    {
-      "subject": "Refund Request for Overcharge",
-      "body": "I was charged twice for my subscription this month. Please refund.",
-      "customer_tier": "pro",
-      "metadata": {
-        "billing_id": "INV-9921"
-      }
-    }
-  ]
-}
-```
-
-### Response (`BatchTriageResult`)
-
-```json
-{
-  "total_processed": 2,
-  "results": [
-    {
-      "category": "technical",
-      "sub_intent": "app_freeze",
-      "priority": "P2",
-      "assigned_queue": "tech_support_queue",
-      "industry": "technology",
-      "suggested_macro_id": "macro_mobile_troubleshooting",
-      "internal_notes": "[TECHNICAL Specialist]: Free user reporting app freeze post-update.",
-      "policy_citations": [
-        "routing_policy.txt",
-        "technical_policy.txt"
-      ],
-      "confidence": 0.95,
-      "escalate": false
-    },
-    {
-      "category": "billing",
-      "sub_intent": "refund_request",
-      "priority": "P2",
-      "assigned_queue": "refund_expert_queue",
-      "industry": "e-commerce",
-      "suggested_macro_id": "macro_refund_duplicate_charge",
-      "internal_notes": "[BILLING Specialist]: Customer requesting refund for duplicate charge.",
-      "policy_citations": [
-        "billing_policy.txt",
-        "routing_policy.txt"
-      ],
-      "confidence": 0.95,
-      "escalate": false
-    }
-  ]
-}
-```
+\
+---
 
 # Running the Project
 
-## 1. Install dependencies
+### 1. Install Dependencies
 
-```bash
+\\ash
 pip install -r requirements.txt
-```
+\
+### 2. Configure Environment
 
-## 2. Configure environment
-
-```bash
+\\ash
 cp .env.example .env
-```
+\Add your Groq API Key to \.env\.
 
-Add your Gemini API Key in `.env`.
+### 3. Start the FastAPI Server
 
-## 3. Start the server
-
-```bash
+\\ash
 uvicorn app.main:app --reload
-```
+\
+### 4. Run the Automated Evaluation Harness
 
-## 4. Run Automated Evaluation Harness
-
-```bash
+\\ash
 python evaluate.py
-```
+\
+### 5. Access Interactive Swagger Docs
 
-## 5. Open Swagger UI
+Open [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) in your browser.
 
-[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+---
 
-# Current Limitations
+# Current Limitations & Future Roadmap
 
-- Vector database indexing with semantic embeddings (ChromaDB/FAISS) is scheduled for the production hardening phase.
-- Gold dataset currently runs on 6 core benchmark cases; full-scale benchmark expansion (30–50 items) is planned for the final release.
+- **Vector Search Engine:** Keyword chunk retrieval is currently used; vector embeddings (FAISS/ChromaDB) remain planned for production hardening.
+- **Multilingual Support:** Current pattern dictionaries prioritize English support communications.
+- **Agent Dashboard UI:** Frontend operational dashboard integration is scheduled for future milestone releases.
+
+---
+
+# Version
+
+**v1.0.0 — Demo Day (Multi-Agent MoE & Full Gold Evaluation)**
+
+---
 
 # Authors
 
 **Group 4 — SCI19 3914 & SCI19 3934**
 
-| **Student ID** | **Name** |
-|---|---|
-| B6722241 | นางสาวลลิตา ร่มลำดวน |
-| B6735036 | นายพัชรพล ลาภชุ่มศรี |
-| B6739324 | นายเจษฎา โพธิ์ราช |
-| B6739393 | นางสาวนิจจารีย์ ระดาบุตร |
+| Student ID | Name | Role |
+| :--- | :--- | :--- |
+| **B6722241** | นางสาวลลิตา ร่มลำดวน | Multi-Agent Orchestration & Evaluation |
+| **B6735036** | นายพัชรพล ลาภชุ่มศรี | Backend API & Data Validation |
+| **B6739324** | นายเจษฎา โพธิ์ราช | RAG Ingestion & Grounding Pipeline |
+| **B6739393** | นางสาวนิจจารีย์ ระดาบุตร | Data Annotation & Benchmark Analysis |
 
+### License
 
-## License
-
-This project was developed for academic purposes as part of the SCI19 3914 & SCI19 3934 coursework.
-
-- Co-authored-by: sosbugsbunny-byte <sosbugsbunny-byte@users.noreply.github.com>
-- Co-authored-by: Jupiterxz <Jupiterxz@users.noreply.github.com>
-- Co-authored-by: valen2004-citizen <valen2004-citizen@users.noreply.github.com>
+This software was developed for academic evaluation purposes as part of the SCI19 3914 & SCI19 3934 curriculum.
