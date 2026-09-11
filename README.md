@@ -393,10 +393,10 @@ Open [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) in your browser.
 
 | Student ID | Name | Role |
 |------------|------|------|
-| B6722241 | นางสาวลลิตา ร่มลำดวน | Multi-Agent Orchestration & Evaluation |
-| B6735036 | นายพัชรพล ลาภชุ่มศรี | Backend API & Data Validation |
-| B6739324 | นายเจษฎา โพธิ์ราช | RAG Ingestion & Grounding Pipeline |
-| B6739393 | นางสาวนิจจารีย์ ระดาบุตร | Data Annotation & Benchmark Analysis |
+| B6722241 | นางสาวลลิตา ร่มลำดวน |
+| B6735036 | นายพัชรพล ลาภชุ่มศรี |
+| B6739324 | นายเจษฎา โพธิ์ราช |
+| B6739393 | นางสาวนิจจารีย์ ระดาบุตร |
 
 ---
 
