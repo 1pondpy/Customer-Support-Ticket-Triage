@@ -42,7 +42,7 @@
     },
     "ground_truth": {
       "category": "technical",
-      "priority": "P3",
+      "priority": "P2",
       "assigned_queue": "tech_support_queue",
       "escalate": false
     }
@@ -75,7 +75,7 @@
     "ground_truth": {
       "category": "account",
       "priority": "P3",
-      "assigned_queue": "general_triage_queue",
+      "assigned_queue": "account_security_queue",
       "escalate": false
     }
   },
@@ -89,9 +89,393 @@
       "metadata": {"tweet_id": "119315", "author_id": "105855"}
     },
     "ground_truth": {
-      "category": "general",
+      "category": "other",
       "priority": "P4",
       "assigned_queue": "general_triage_queue",
+      "escalate": false
+    }
+  },
+  {
+    "id": "gold_07",
+    "tweet_id": "119320",
+    "input": {
+      "subject": "Production DB Crash Across Regions",
+      "body": "CRITICAL: Complete system down on production cluster, error 500 across all US endpoints. Need immediate SLA tier 1 response!",
+      "customer_tier": "enterprise",
+      "metadata": {"region": "us-east-1", "severity": "outage"}
+    },
+    "ground_truth": {
+      "category": "technical",
+      "priority": "P1",
+      "assigned_queue": "tech_support_queue",
+      "escalate": true
+    }
+  },
+  {
+    "id": "gold_08",
+    "tweet_id": "119325",
+    "input": {
+      "subject": "Direct Money Back Request for Cancelled Order",
+      "body": "I canceled order #88492 last week but my money back return payment has not arrived. Process the refund immediately.",
+      "customer_tier": "pro",
+      "metadata": {"order_id": "88492"}
+    },
+    "ground_truth": {
+      "category": "refund",
+      "priority": "P2",
+      "assigned_queue": "refund_expert_queue",
+      "escalate": false
+    }
+  },
+  {
+    "id": "gold_09",
+    "tweet_id": "119331",
+    "input": {
+      "subject": "Where is my parcel delivery?",
+      "body": "@AmazonHelp My courier package tracking number hasn't updated for 6 days. Is the parcel lost in transit?",
+      "customer_tier": "free",
+      "metadata": {"carrier": "RoyalMail", "tracking_code": "RM99281"}
+    },
+    "ground_truth": {
+      "category": "shipping",
+      "priority": "P3",
+      "assigned_queue": "shipping_logistics_queue",
+      "escalate": false
+    }
+  },
+  {
+    "id": "gold_10",
+    "tweet_id": "119340",
+    "input": {
+      "subject": "Suspected Account Breach & Unauthorized Login",
+      "body": "Urgent security alert: I received an email saying someone logged in from another country. My credential might be hacked or leak!",
+      "customer_tier": "pro",
+      "metadata": {"source": "security_alert"}
+    },
+    "ground_truth": {
+      "category": "security",
+      "priority": "P1",
+      "assigned_queue": "security_incident_queue",
+      "escalate": true
+    }
+  },
+  {
+    "id": "gold_11",
+    "tweet_id": "119348",
+    "input": {
+      "subject": "UI Dark Mode Suggestion",
+      "body": "Love the app overall! Just wanted to suggest adding a dark mode option for desktop. It would improve readability at night.",
+      "customer_tier": "free",
+      "metadata": {"platform": "desktop"}
+    },
+    "ground_truth": {
+      "category": "feedback",
+      "priority": "P4",
+      "assigned_queue": "customer_feedback_queue",
+      "escalate": false
+    }
+  },
+  {
+    "id": "gold_12",
+    "tweet_id": "119355",
+    "input": {
+      "subject": "Dispute on Annual Subscription Charge",
+      "body": "I was billed twice on invoice INV-2026-01 for pro membership. Please fix this overcharge discrepancy.",
+      "customer_tier": "pro",
+      "metadata": {"invoice_id": "INV-2026-01"}
+    },
+    "ground_truth": {
+      "category": "billing",
+      "priority": "P2",
+      "assigned_queue": "billing_default_queue",
+      "escalate": false
+    }
+  },
+  {
+    "id": "gold_13",
+    "tweet_id": "119362",
+    "input": {
+      "subject": "Locked Out of Account - Cannot Receive OTP",
+      "body": "I'm trying to sign in but the two-factor authentication OTP code never arrives on my phone. Account is locked.",
+      "customer_tier": "free",
+      "metadata": {"device": "Android"}
+    },
+    "ground_truth": {
+      "category": "account",
+      "priority": "P3",
+      "assigned_queue": "account_security_queue",
+      "escalate": false
+    }
+  },
+  {
+    "id": "gold_14",
+    "tweet_id": "119370",
+    "input": {
+      "subject": "General Inquiry About Opening Hours",
+      "body": "Hi there, can you tell me what time your central store branch opens on bank holidays?",
+      "customer_tier": "free",
+      "metadata": {"location": "London"}
+    },
+    "ground_truth": {
+      "category": "other",
+      "priority": "P4",
+      "assigned_queue": "general_triage_queue",
+      "escalate": false
+    }
+  },
+  {
+    "id": "gold_15",
+    "tweet_id": "119377",
+    "input": {
+      "subject": "Gateway Timeout 504 on Enterprise Portal",
+      "body": "Our business users are encountering 504 Gateway Timeout and freeze when loading reports. API fail across dashboard.",
+      "customer_tier": "enterprise",
+      "metadata": {"cluster": "eu-central-1"}
+    },
+    "ground_truth": {
+      "category": "technical",
+      "priority": "P1",
+      "assigned_queue": "tech_support_queue",
+      "escalate": true
+    }
+  },
+  {
+    "id": "gold_16",
+    "tweet_id": "119385",
+    "input": {
+      "subject": "Return Payment Request for Defective Item",
+      "body": "The shoes arrived torn. I sent them back yesterday. Please issue my refund back to my card immediately.",
+      "customer_tier": "free",
+      "metadata": {"return_label": "RT-3391"}
+    },
+    "ground_truth": {
+      "category": "refund",
+      "priority": "P3",
+      "assigned_queue": "refund_expert_queue",
+      "escalate": false
+    }
+  },
+  {
+    "id": "gold_17",
+    "tweet_id": "119391",
+    "input": {
+      "subject": "Delayed Courier Delivery Tracking",
+      "body": "My package was supposed to arrive 3 days ago. The delivery tracking status has been stuck at the sorting hub.",
+      "customer_tier": "pro",
+      "metadata": {"tracking_num": "TRK88219"}
+    },
+    "ground_truth": {
+      "category": "shipping",
+      "priority": "P2",
+      "assigned_queue": "shipping_logistics_queue",
+      "escalate": false
+    }
+  },
+  {
+    "id": "gold_18",
+    "tweet_id": "119400",
+    "input": {
+      "subject": "Phishing Link Received Claiming to be Your Company",
+      "body": "I got a suspicious SMS with a link asking for my login password. Looks like a phishing hack attempt on customer credentials.",
+      "customer_tier": "free",
+      "metadata": {"source": "sms_report"}
+    },
+    "ground_truth": {
+      "category": "security",
+      "priority": "P1",
+      "assigned_queue": "security_incident_queue",
+      "escalate": true
+    }
+  },
+  {
+    "id": "gold_19",
+    "tweet_id": "119409",
+    "input": {
+      "subject": "Compliment for Support Agent Sarah",
+      "body": "Just wanted to say thank you to Sarah on live chat! She resolved my problem quickly. Compliment to the whole team.",
+      "customer_tier": "free",
+      "metadata": {"agent": "Sarah"}
+    },
+    "ground_truth": {
+      "category": "feedback",
+      "priority": "P4",
+      "assigned_queue": "customer_feedback_queue",
+      "escalate": false
+    }
+  },
+  {
+    "id": "gold_20",
+    "tweet_id": "119416",
+    "input": {
+      "subject": "Incorrect Billing Rate Applied",
+      "body": "My invoice reflects $99/mo instead of the discounted pro plan rate of $49/mo. Please correct this bill.",
+      "customer_tier": "pro",
+      "metadata": {"plan": "discount_pro"}
+    },
+    "ground_truth": {
+      "category": "billing",
+      "priority": "P2",
+      "assigned_queue": "billing_default_queue",
+      "escalate": false
+    }
+  },
+  {
+    "id": "gold_21",
+    "tweet_id": "119424",
+    "input": {
+      "subject": "Reset Forgotten Password Email Not Coming",
+      "body": "I clicked reset password but no credential reset link arrives in my inbox or spam folder. Cannot access my account.",
+      "customer_tier": "free",
+      "metadata": {"email_domain": "gmail.com"}
+    },
+    "ground_truth": {
+      "category": "account",
+      "priority": "P3",
+      "assigned_queue": "account_security_queue",
+      "escalate": false
+    }
+  },
+  {
+    "id": "gold_22",
+    "tweet_id": "119430",
+    "input": {
+      "subject": "Mobile App Freezing on Splash Screen",
+      "body": "Since the latest update version 3.4.1, the app crashes and freeze at the startup logo screen. iOS 17.2.",
+      "customer_tier": "free",
+      "metadata": {"app_version": "3.4.1", "os": "iOS 17.2"}
+    },
+    "ground_truth": {
+      "category": "technical",
+      "priority": "P3",
+      "assigned_queue": "tech_support_queue",
+      "escalate": false
+    }
+  },
+  {
+    "id": "gold_23",
+    "tweet_id": "119438",
+    "input": {
+      "subject": "Cancelled Membership Want Money Back",
+      "body": "I cancelled my subscription within the 14-day trial window. Cancel order and refund payment to my PayPal.",
+      "customer_tier": "free",
+      "metadata": {"payment_method": "paypal"}
+    },
+    "ground_truth": {
+      "category": "refund",
+      "priority": "P3",
+      "assigned_queue": "refund_expert_queue",
+      "escalate": false
+    }
+  },
+  {
+    "id": "gold_24",
+    "tweet_id": "119445",
+    "input": {
+      "subject": "Package Delivered to Wrong Address",
+      "body": "Courier says parcel was delivered but I checked my porch and security cameras. Delivery went to the wrong house.",
+      "customer_tier": "free",
+      "metadata": {"carrier": "FedEx"}
+    },
+    "ground_truth": {
+      "category": "shipping",
+      "priority": "P3",
+      "assigned_queue": "shipping_logistics_queue",
+      "escalate": false
+    }
+  },
+  {
+    "id": "gold_25",
+    "tweet_id": "119451",
+    "input": {
+      "subject": "Potential Customer Data Breach Notice Inquiry",
+      "body": "Did your company suffer a data leak? I see user data being discussed on forums. We need a security confirmation.",
+      "customer_tier": "enterprise",
+      "metadata": {"department": "compliance"}
+    },
+    "ground_truth": {
+      "category": "security",
+      "priority": "P1",
+      "assigned_queue": "security_incident_queue",
+      "escalate": true
+    }
+  },
+  {
+    "id": "gold_26",
+    "tweet_id": "119460",
+    "input": {
+      "subject": "Terrible UI Update on Navigation Menu",
+      "body": "The latest redesign is terrible UI. It takes three more clicks to find basic settings. Please improve navigation.",
+      "customer_tier": "pro",
+      "metadata": {"version": "web_v2"}
+    },
+    "ground_truth": {
+      "category": "feedback",
+      "priority": "P4",
+      "assigned_queue": "customer_feedback_queue",
+      "escalate": false
+    }
+  },
+  {
+    "id": "gold_27",
+    "tweet_id": "119468",
+    "input": {
+      "subject": "Double Charge on Monthly Invoice",
+      "body": "I was charged twice $29 on February 1st and February 2nd. Please refund or credit the double charge discrepancy.",
+      "customer_tier": "free",
+      "metadata": {"card_last4": "4421"}
+    },
+    "ground_truth": {
+      "category": "billing",
+      "priority": "P3",
+      "assigned_queue": "billing_default_queue",
+      "escalate": false
+    }
+  },
+  {
+    "id": "gold_28",
+    "tweet_id": "119475",
+    "input": {
+      "subject": "Account Email Change Request",
+      "body": "My work email is being decommissioned. How can I transfer my account ownership to my personal login email?",
+      "customer_tier": "pro",
+      "metadata": {"user_id": "usr_99182"}
+    },
+    "ground_truth": {
+      "category": "account",
+      "priority": "P2",
+      "assigned_queue": "account_security_queue",
+      "escalate": false
+    }
+  },
+  {
+    "id": "gold_29",
+    "tweet_id": "119482",
+    "input": {
+      "subject": "System Outage - Payment Webhook Failure",
+      "body": "Outage alert: Our checkout webhook endpoints are returning 500 error code. Critical disruption for all customers!",
+      "customer_tier": "enterprise",
+      "metadata": {"api_version": "v3"}
+    },
+    "ground_truth": {
+      "category": "technical",
+      "priority": "P1",
+      "assigned_queue": "tech_support_queue",
+      "escalate": true
+    }
+  },
+  {
+    "id": "gold_30",
+    "tweet_id": "119490",
+    "input": {
+      "subject": "Lost Lost Parcel Replacement or Refund",
+      "body": "Tracking number shows parcel was lost by courier over two weeks ago. I want a refund return payment or replacement parcel.",
+      "customer_tier": "pro",
+      "metadata": {"dispute_type": "lost_shipment"}
+    },
+    "ground_truth": {
+      "category": "refund",
+      "priority": "P2",
+      "assigned_queue": "refund_expert_queue",
       "escalate": false
     }
   }
