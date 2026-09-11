@@ -1,9 +1,16 @@
-from typing import Literal
-from pydantic import BaseModel
+from typing import Literal, Dict, Any, Optional
+from pydantic import BaseModel, Field
+
+CustomerTier = Literal["free", "pro", "enterprise"]
 
 class TicketInput(BaseModel):
-    subject: str
-    body: str
-    customer_tier: Literal["free", "pro", "enterprise"] | None  ## Literal คือการล็อกค่าตายตัวตามที่กำหนดเท่านั้น
-    metadata: dict[str, str] | None                             ## dict คือโครงสร้างคู่คีย์-ค่า (Key-Value Pairs) เช่น {"device": "iPhone 15"}
-                                                                ## | None คือการระบุว่า "ฟิลด์นี้อนุญาตให้มีค่าว่าง (Null) ได้
+    subject: str = Field(..., description="หัวข้อหรือสรุปปัญหาของตั๋ว")
+    body: str = Field(..., description="เนื้อหารายละเอียดของตั๋วจากลูกค้า")
+    customer_tier: Optional[CustomerTier] = Field(
+        default=None, 
+        description="ระดับสิทธิ์ลูกค้า: free, pro, หรือ enterprise"
+    )
+    metadata: Optional[Dict[str, Any]] = Field(
+        default_factory=dict, 
+        description="ข้อมูลบริบทเสริม เช่น device, browser, tweet_id"
+    )
