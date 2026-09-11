@@ -130,7 +130,7 @@ Do not include priority or escalate in your decision.
 {json.dumps(ticket_payload, ensure_ascii=False, indent=2)}
 """
 
-    model_name = "llama-3.1-8b-instant"
+    model_name = os.getenv("MODEL_NAME") or "openai/gpt-oss-20b"
 
     response = client.chat.completions.create(
         model=model_name,
