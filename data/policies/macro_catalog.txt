@@ -1,0 +1,10 @@
+[MACRO CATALOG]
+- macro_billing_dispute: แนะนำขั้นตอนการตรวจสอบและพักยอดชำระที่มีข้อพิพาท
+- macro_refund_request: เทมเพลตแบบฟอร์มขอเงินคืนและเงื่อนไขระยะเวลา 7-14 วันทำการ
+- macro_tech_bug_triage: ขั้นตอนขอ Log และข้อมูล Version สำหรับบั๊กของระบบ
+- macro_tech_outage_notice: ประกาศแจ้งเหตุขัดข้องของระบบและกรอบเวลาการกู้คืน
+- macro_account_access_recovery: คำแนะนำการรีเซ็ตรหัสผ่านและการยืนยันตัวตน 2FA
+- macro_shipping_tracking_issue: ขั้นตอนตรวจสอบสถานะพัสดุล่าช้าหรือสูญหายกับขนส่ง
+- macro_general_feedback_ack: ข้อความขอบคุณสำหรับคำติชมและส่งเรื่องให้ทีมพัฒนา
+- macro_security_incident_ack: แจ้งลูกค้ารับทราบเคสความปลอดภัยและตัดสัญญาณเซสชันชั่วคราว
+- macro_general_help: เทมเพลตตอบรับคำถามทั่วไปและสอบถามข้อมูลเพิ่มเติม

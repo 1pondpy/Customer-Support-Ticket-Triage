@@ -1,189 +1,194 @@
-## ขั้นที่ 1 (Supervisor Routing): สแกนคีย์เวิร์ดใน Subject และ Body เพื่อเลือกสายงาน Specialist ที่เหมาะสม (technical, billing, account, หรือ general)
-## ขั้นที่ 2 (RAG Retrieval): ค้นหาข้อความที่ตรงกันจากไฟล์นโยบาย 4 ฉบับ (data/policies/) ดึง Chunks นโยบายที่เกี่ยวข้องมาเตรียมไว้เป็น Context
-## ขั้นที่ 3 (Prompt Framing): ประกอบร่างตั๋วลูกค้าเข้ากับบริบทนโยบาย โดยใช้ Delimiters (=== ... ===) ตีกรอบขอบเขตอย่างชัดเจน เพื่อป้องกัน Prompt Injection และลดการเกิดภาพหลอน (Hallucination)
-## ขั้นที่ 4 (Gemini LLM Inference): ส่งไปประมวลผลผ่านโมเดล Gemini โดยตั้งค่า temperature=0.0 และบังคับโครงสร้างคำตอบออกมาเป็น JSON รูปแบบ TriageResult
-## ขั้นที่ 5 (Deterministic SLA Enforcement): ตรวจเช็ค Customer Tier และปัญหาเร่งด่วน หากเป็น enterprise หรือระบบล่ม (outage) จะปรับเป็น P1 และยกธง escalate=True ทันที พร้อมแนบรายชื่อไฟล์ลงใน policy_citations
-## ขั้นที่ 6 (Async Non-blocking Output): ประมวลผลผ่าน ThreadPool แบบ Asynchronous เพื่อรองรับการประมวลผลพร้อมกันหลายตั๋วบนเอนด์พอยต์ Batch และส่งผลลัพธ์กลับแบบ HTTP 200 OK
-
 import os
 import json
 import asyncio
+from typing import List, Dict, Any, Tuple
 from google import genai
 from google.genai import types
 
 from app.schemas.ticket import TicketInput
-from app.schemas.triage import TriageResult
+from app.schemas.triage import TriageResult, TicketCategory, TicketPriority
 from app.services.rag_service import RAGService
 from app.config import settings
 
-# ---------------------------------------------------------
-# 1. การตั้งค่าและสร้างการเชื่อมต่อบริการพื้นฐาน (Initialization)
-# ---------------------------------------------------------
-
-# โหลดบริการ RAG เพื่อเตรียมพร้อมสำหรับการดึงชิ้นส่วนนโยบายจาก data/policies/
+# 1. Initialize Service
 rag_service = RAGService(policy_dir="data/policies")
 
 def get_client() -> genai.Client:
-    """ตรวจสอบ API Key จากหลายแหล่งและคืนค่า Google GenAI Client"""
     api_key = settings.GEMINI_API_KEY or os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
     if not api_key:
-        raise ValueError("API Key not found. Please set GEMINI_API_KEY or GOOGLE_API_KEY in your .env file.")
+        raise ValueError("API Key not found. Please set GEMINI_API_KEY in your .env file.")
     return genai.Client(api_key=api_key)
 
-# ---------------------------------------------------------
-# 2. ตัวกำหนดเส้นทาง Supervisor (Supervisor Router Agent)
-# ---------------------------------------------------------
-
-def supervisor_route_domain(ticket: TicketInput) -> str:
-    """วิเคราะห์คำสำคัญใน Subject และ Body เพื่อเลือกสายงาน Specialist ที่เหมาะสม"""
+# ---------------------------------------------------------------------------
+# Component 1: Intent Router Agent (แยกประเภทปัญหาหลัก 1 ใน 8 หมวดหมู่)
+# ---------------------------------------------------------------------------
+def intent_router_agent(ticket: TicketInput) -> TicketCategory:
     text = f"{ticket.subject} {ticket.body}".lower()
     
-    # ตรวจจับปัญหาด้านการเงิน ใบแจ้งหนี้ และการขอเงินคืน
-    if any(k in text for k in ["charge", "refund", "bill", "invoice", "payment", "money back", "discrepancy"]):
+    # ลำดับการคัดแยกหมวดหมู่ตามคีย์เวิร์ดเฉพาะทาง
+    if any(k in text for k in ["refund", "money back", "return payment", "cancel order and refund"]):
+        return "refund"
+    elif any(k in text for k in ["charge", "bill", "invoice", "overcharge", "double charge", "discrepancy"]):
         return "billing"
-    # ตรวจจับปัญหาข้อผิดพลาดเชิงเทคนิค ระบบขัดข้อง หรือบั๊กการทำงาน
-    elif any(k in text for k in ["bug", "crash", "error", "freeze", "down", "outage", "keyboard", "printhead"]):
-        return "technical"
-    # ตรวจจับปัญหาการเข้าสู่ระบบ รหัสยืนยันตัวตน และความปลอดภัยของบัญชี
-    elif any(k in text for k in ["code", "otp", "login", "password", "account", "access", "verify", "sign out"]):
+    elif any(k in text for k in ["track", "ship", "package", "delivery", "courier", "parcel", "delay"]):
+        return "shipping"
+    elif any(k in text for k in ["hack", "breach", "security", "leak", "unauthorized", "suspicious", "phishing"]):
+        return "security"
+    elif any(k in text for k in ["login", "password", "otp", "2fa", "account", "locked", "credential"]):
         return "account"
-    
-    # หากไม่ตรงกับคำสำคัญข้างต้น จัดเข้าหมวดหมู่การสอบถามทั่วไป
-    return "general"
+    elif any(k in text for k in ["bug", "crash", "error", "down", "outage", "500", "api fail", "freeze"]):
+        return "technical"
+    elif any(k in text for k in ["feedback", "compliment", "suggest", "improve", "love the app", "terrible ui"]):
+        return "feedback"
+    return "other"
 
-# ---------------------------------------------------------
-# 3. คลังคำสั่งเฉพาะทางสำหรับ Specialist (Specialist Prompts)
-# ---------------------------------------------------------
-
-def get_specialist_instruction(domain: str) -> str:
-    """ส่งคืน System Instruction ประจำสายงานของผู้เชี่ยวชาญโดเมนนั้น"""
-    instructions = {
+# ---------------------------------------------------------------------------
+# Component 2: Domain Experts System Prompts (กำหนดบทบาทผู้เชี่ยวชาญเฉพาะด้าน)
+# ---------------------------------------------------------------------------
+def get_domain_expert_instruction(category: TicketCategory) -> str:
+    instructions: Dict[TicketCategory, str] = {
         "technical": (
             "You are a Technical Support Specialist Agent. "
-            "Analyze software bugs, crashes, hardware defects, outages, and system errors. "
-            "Map category to 'technical', assign appropriate sub_intent, and set assigned_queue to 'tech_support_queue'."
+            "Analyze system bugs, error codes, crashes, and outages. "
+            "Set category='technical', assigned_queue='tech_support_queue', and pick an appropriate macro from macro_catalog.txt."
         ),
         "billing": (
-            "You are a Billing & Refund Specialist Agent. "
-            "Analyze invoices, double charges, subscriptions, and refund inquiries. "
-            "Map category to 'billing', assign sub_intent (e.g. 'refund_request', 'dispute_charge'), "
-            "and assign to 'billing_default_queue' or 'refund_expert_queue'."
+            "You are a Billing Specialist Agent. "
+            "Analyze recurring subscriptions, invoice disputes, and erroneous charges. "
+            "Set category='billing', assigned_queue='billing_default_queue', and pick an appropriate macro from macro_catalog.txt."
+        ),
+        "refund": (
+            "You are a Refund Specialist Agent. "
+            "Evaluate return eligibility, money-back requests, and order cancellations. "
+            "Set category='refund', assigned_queue='refund_expert_queue', and pick an appropriate macro from macro_catalog.txt."
         ),
         "account": (
             "You are an Account & Security Specialist Agent. "
-            "Analyze login issues, OTP/verification codes, credential resets, and access permissions. "
-            "Map category to 'account', assign sub_intent, and set assigned_queue to 'account_security_queue' or 'general_support_queue'."
+            "Analyze credential resets, 2FA/OTP issues, and user lockouts. "
+            "Set category='account', assigned_queue='account_security_queue', and pick an appropriate macro from macro_catalog.txt."
         ),
-        "general": (
-            "You are a General Customer Support Specialist Agent. "
-            "Analyze delivery schedules, standard inquiries, feedback, and unclassified questions. "
-            "Map category to 'general', assign sub_intent, and set assigned_queue to 'general_triage_queue'."
+        "shipping": (
+            "You are a Shipping & Logistics Specialist Agent. "
+            "Analyze parcel tracking, courier delays, and shipment issues. "
+            "Set category='shipping', assigned_queue='shipping_logistics_queue', and pick an appropriate macro from macro_catalog.txt."
+        ),
+        "feedback": (
+            "You are a Customer Experience Feedback Agent. "
+            "Analyze UX improvements, feature requests, and compliments. "
+            "Set category='feedback', assigned_queue='customer_feedback_queue', and pick an appropriate macro from macro_catalog.txt."
+        ),
+        "security": (
+            "You are a Cybersecurity Incident Specialist Agent. "
+            "Analyze data compromises, unauthorized logins, and threat alerts. "
+            "Set category='security', assigned_queue='security_incident_queue', and pick an appropriate macro from macro_catalog.txt."
+        ),
+        "other": (
+            "You are a General Care Triage Agent. "
+            "Handle standard queries that do not belong to specialized queues. "
+            "Set category='other', assigned_queue='general_triage_queue', and pick an appropriate macro from macro_catalog.txt."
         )
     }
-    return instructions.get(domain, instructions["general"]) ## หากไม่ตรงกับโดเมนใด ๆ ให้ใช้คำสั่งของ General Support เป็นค่าเริ่มต้น
+    return instructions.get(category, instructions["other"])
 
-# ---------------------------------------------------------
-# 4. กลไกกฎควบคุม SLA และความเร่งด่วน (Deterministic SLA Engine)
-# ---------------------------------------------------------
-
-def evaluate_sla_and_priority(ticket: TicketInput, domain: str) -> tuple[str, bool]:
-    """คำนวณระดับความสำคัญ Priority (P1-P4) และสถานะ Escalation ด้วยกฎตายตัวตาม SLA Policy"""
+# ---------------------------------------------------------------------------
+# Component 3: Priority Scorer (ประเมินระดับความสำคัญ P1-P4 ตาม SLA Matrix)
+# ---------------------------------------------------------------------------
+def priority_scorer(ticket: TicketInput, category: TicketCategory) -> Tuple[TicketPriority, bool, str]:
     text = f"{ticket.subject} {ticket.body}".lower()
-    # ดักจับคำสำคัญที่ระบุถึงปัญหาระบบล่มหรือความปลอดภัยข้อมูล
-    is_outage = any(k in text for k in ["outage", "system down", "security breach", "data leak"])
+    is_outage = any(k in text for k in ["outage", "system down", "security breach", "data leak", "critical"])
     
-    # Priority 1: บังคับยกระดับเคสด่วนสำหรับลูกค้า Enterprise หรือเมื่อระบบหลักมีปัญหา/ข้อมูลรั่ว
-    if ticket.customer_tier == "enterprise" or is_outage:
-        return "P1", True
+    # Priority 1: บังคับ Escalate เมื่อเป็นลูกค้าระดับ Enterprise, ระบบล่ม หรือปัญหาความปลอดภัย
+    if ticket.customer_tier == "enterprise" or is_outage or category == "security":
+        return "P1", True, "Triggered P1/Escalation: Enterprise customer, outage, or security incident."
+    # Priority 2: ลูกค้ากลุ่ม Pro หรือเคสข้อพิพาทการเงิน/เทคนิคเร่งด่วน
+    elif ticket.customer_tier == "pro" or category in ["billing", "refund", "technical"]:
+        return "P2", False, "Triggered P2: Pro tier or urgent billing/technical dispute."
+    # Priority 3: ลูกค้าทั่วไป (Free tier) หรือเคสติดตามพัสดุ/บัญชีทั่วไป
+    elif ticket.customer_tier == "free" or category in ["account", "shipping"]:
+        return "P3", False, "Triggered P3: Free tier standard inquiry or account/shipping tracking."
+    # Priority 4: ข้อเสนอแนะหรือคำถามที่ไม่เร่งด่วน
+    return "P4", False, "Triggered P4: Low-urgency feedback or standard general request."
+
+# ---------------------------------------------------------------------------
+# Component 4: Judge Agent (ตรวจสอบความถูกต้องของ Policy Citations และผลลัพธ์)
+# ---------------------------------------------------------------------------
+def judge_agent(draft_result: Dict[str, Any], retrieved_citations: List[str]) -> Tuple[List[str], str]:
+    # ตรวจสอบว่า Citation ที่ตอบมามีอยู่ในเอกสาร RAG จริงหรือไม่
+    citations = [c for c in draft_result.get("policy_citations", []) if c in retrieved_citations]
+    if not citations:
+        citations = retrieved_citations if retrieved_citations else ["routing_policy.txt"]
     
-    # Priority 2: ลูกค้าระดับ Pro หรือตั๋วสายการเงินและเทคนิคที่มีความเร่งด่วนปานกลาง
-    if ticket.customer_tier == "pro" or domain in ["billing", "technical"]:
-        return "P2", False
-        
-    # Priority 3: ตั๋วระดับปกติจากกลุ่มลูกค้าระดับ Free
-    if ticket.customer_tier == "free":
-        return "P3", False
-        
-    # Priority 4: กรณีอื่น ๆ ทั่วไปหรือข้อเสนอแนะ
-    return "P4", False
+    judge_verdict = f"Verified by Judge Agent: Grounded with {len(citations)} policy source(s)."
+    return citations, judge_verdict
 
-# ---------------------------------------------------------
-# 5. ท่อประมวลผลหลัก (Core Triage Orchestration Pipeline)
-# ---------------------------------------------------------
-
+# ---------------------------------------------------------------------------
+# Main Multi-Agent Orchestration Pipeline
+# ---------------------------------------------------------------------------
 def triage_ticket_with_llm(ticket: TicketInput) -> TriageResult:
-    """ควบคุมลำดับขั้นตอนการคัดแยกตั๋วตั้งแต่ดึงบริบทนโยบาย เรียก LLM ไปจนถึงตรวจทาน SLA"""
+    # 1. Intent Router Agent
+    category = intent_router_agent(ticket)
     
-    # ขั้นตอนที่ 1: ตรวจสอบและส่งต่องานไปยัง Specialist Domain
-    domain = supervisor_route_domain(ticket)
-    
-    # ขั้นตอนที่ 2: ดึงชิ้นส่วนนโยบายที่ตรงกับข้อความตั๋วผ่านระบบ RAG (Policy Grounding)
-    search_query = f"{ticket.subject} {ticket.body} {domain}" ## รวม Subject, Body และ Domain เพื่อเพิ่มความแม่นยำในการค้นหา Chunks
-    try:
-        retrieved_chunks = rag_service.search_policies(query=search_query, top_k=3)
-        context_text = "\n\n".join([f"[{chunk['source']}]\n{chunk['text']}" for chunk in retrieved_chunks])
-        # รวบรวมรายชื่อไฟล์นโยบายเพื่อนำไปใช้เป็น Policy Citations
-        policy_citations = list(set([c["source"] for c in retrieved_chunks])) if retrieved_chunks else ["routing_policy.txt"]
-    except Exception:
-        context_text = "Standard routing and SLA policies apply."
-        policy_citations = ["routing_policy.txt"]
+    # 2. Policy RAG Agent
+    query = f"{ticket.subject} {ticket.body} {category}"
+    retrieved_chunks = rag_service.search_policies(query=query, top_k=3)
+    policy_context = "\n\n".join([f"[{c['source']}]\n{c['text']}" for c in retrieved_chunks])
+    retrieved_sources = list(set([c["source"] for c in retrieved_chunks])) if retrieved_chunks else ["routing_policy.txt"]
 
-    # ขั้นตอนที่ 3: เลือก Prompt ประจำสายงานและประกอบข้อความตั๋วภายใต้กรอบ Delimiters
-    specialist_prompt = get_specialist_instruction(domain)
-    
-    ticket_payload = {  ## สร้าง Payload ของตั๋วลูกค้าในรูปแบบ JSON เพื่อส่งไปยัง LLM
+    # 3. Domain Expert LLM Reasoning
+    expert_instruction = get_domain_expert_instruction(category)
+    client = get_client()
+    model_name = settings.MODEL_NAME or os.getenv("MODEL_NAME") or "gemini-3.6-flash"
+
+    payload = {
         "subject": ticket.subject,
         "body": ticket.body,
         "customer_tier": ticket.customer_tier,
         "metadata": ticket.metadata or {}
     }
 
-    # วางกรอบ Delimiters ชัดเจนเพื่อแยกบริบทนโยบายออกจากตั๋วลูกค้า ป้องกันปัญหาภาพหลอน (Hallucination)
-    user_content = f""" === RETRIEVED POLICIES CONTEXT ===
-                                {context_text}
+    prompt = f"""=== RETRIEVED POLICIES CONTEXT ===
+{policy_context}
 
-                        === INCOMING TICKET ===
-                                {json.dumps(ticket_payload, ensure_ascii=False, indent=2)}
-                    """
+=== INCOMING TICKET ===
+{json.dumps(payload, ensure_ascii=False, indent=2)}
 
-    # ขั้นตอนที่ 4: ส่งประมวลผลผ่าน Gemini API บังคับโครงสร้างผลลัพธ์เป็น JSON และคุมความเสถียร
-    client = get_client()
-    model_name = settings.MODEL_NAME or os.getenv("MODEL_NAME") or "gemini-3.6-flash"
+Analyze the ticket and generate JSON strictly matching TriageResult schema.
+"""
 
     response = client.models.generate_content(
         model=model_name,
-        contents=user_content,
+        contents=prompt,
         config=types.GenerateContentConfig(
-            system_instruction=specialist_prompt,
+            system_instruction=expert_instruction,
             response_mime_type="application/json",
-            response_schema=TriageResult,  # ควบคุมโครงสร้างขาออกตาม Pydantic Schema
-            temperature=0.0                # ลดความสุ่มเพื่อให้คำตอบมีเสถียรภาพสูงสุด
+            response_schema=TriageResult,
+            temperature=0.0
         )
     )
+    draft = json.loads(response.text)
 
-    # ขั้นตอนที่ 5: นำผลลัพธ์มาตรวจทานและเขียนทับ Priority และ Escalation ด้วย Deterministic SLA Rules
-    result = json.loads(response.text)
-    priority, escalate = evaluate_sla_and_priority(ticket, domain)
-    
-    # ประกอบผลลัพธ์สุดท้ายและตรวจสอบความถูกต้องผ่าน Pydantic Model (TriageResult)
+    # 4. Priority Scorer
+    priority, escalate, priority_justification = priority_scorer(ticket, category)
+
+    # 5. Judge Agent Grounding Check
+    validated_citations, judge_verdict = judge_agent(draft, retrieved_sources)
+
     return TriageResult(
-        category=result.get("category", domain),
-        sub_intent=result.get("sub_intent", "general_inquiry"),
+        category=category,
+        sub_intent=draft.get("sub_intent", "general_inquiry"),
         priority=priority,
-        assigned_queue=result.get("assigned_queue", "general_triage_queue"),
-        industry=result.get("industry"),
-        suggested_macro_id=result.get("suggested_macro_id"),
-        internal_notes=f"[{domain.upper()} Specialist]: {result.get('internal_notes', '')}",
-        policy_citations=policy_citations,
-        confidence=float(result.get("confidence", 0.95)),
+        assigned_queue=draft.get("assigned_queue", "general_triage_queue"),
+        industry=draft.get("industry"),
+        suggested_macro_id=draft.get("suggested_macro_id"),
+        internal_notes=f"[{category.upper()} Expert]: {draft.get('internal_notes', '')} | {priority_justification} | {judge_verdict}",
+        policy_citations=validated_citations,
+        confidence=float(draft.get("confidence", 0.95)),
         escalate=escalate
     )
 
-# ---------------------------------------------------------
-# 6. ส่วนประมวลผลแบบอะซิงโครนัส (Async Non-blocking Wrapper)
-# ---------------------------------------------------------
-
-async def triage_ticket_async(ticket: TicketInput) -> TriageResult: ## คิองฟังก์ชัน triage_ticket_async ที่เป็นแบบ Asynchronous เพื่อรองรับการประมวลผลหลายตั๋วพร้อมกัน
-    """แปลงการประมวลผลให้เป็นแบบ Non-blocking ผ่าน ThreadPool เพื่อรองรับการทำงานแบบ Batch"""
+# ---------------------------------------------------------------------------
+# Async Batch Non-blocking Wrapper
+# ---------------------------------------------------------------------------
+async def triage_ticket_async(ticket: TicketInput) -> TriageResult:
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, triage_ticket_with_llm, ticket)

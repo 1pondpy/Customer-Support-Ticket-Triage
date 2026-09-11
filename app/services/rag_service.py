@@ -1,76 +1,69 @@
-## ขั้นตอนที่ 1: เตรียมตำแหน่งและป้องกัน Path ผิดพลาด (__init__)
-## ขั้นตอนที่ 2: โหลดและหั่นเอกสารเป็นท่อนย่อย (load_and_chunk_policies)
-## ขั้นตอนที่ 3: ค้นหาข้อความด้วยคำสำคัญ (search_policies)
-
 import os
+from typing import List, Dict, Any
+
+POLICY_DIR = os.path.join(os.path.dirname(__file__), "../../data/policies")
 
 class RAGService:
-    def __init__(self, policy_dir: str = "data/policies"):
-        """กำหนดตำแหน่งโฟลเดอร์นโยบาย และโหลดตัดชิ้นส่วนข้อความ (Chunks) ทันทีที่สร้าง Service"""
+    def __init__(self, policy_dir: str = POLICY_DIR):
         self.policy_dir = policy_dir
-        
-        # ป้องกันปัญหา Relative Path: ตรวจสอบและถอย Path 1 ระดับหากรันคำสั่งจากโฟลเดอร์ app/
-        if not os.path.exists(self.policy_dir) and os.path.exists(f"../{self.policy_dir}"):
-            self.policy_dir = f"../{self.policy_dir}" ## ปรับ Path ให้ชี้ไปยังโฟลเดอร์ data/policies ที่อยู่ระดับเดียวกับ app/
-            
-        # อ่านไฟล์นโยบายทั้งหมดและสับแบ่งข้อความเป็น Chunks เก็บไว้ในหน่วยความจำ
-        self.chunks = self.load_and_chunk_policies()
+        self.chunks: List[Dict[str, str]] = []
+        self.load_and_chunk_policies()
 
-    def load_and_chunk_policies(self, chunk_size: int = 300) -> list[dict]:
-        """อ่านไฟล์ .txt ทั้งหมดใน policy_dir แล้วหั่นข้อความออกเป็นท่อนย่อยตามขนาด chunk_size"""
-        chunks = []
+    def load_and_chunk_policies(self):
+        """โหลดไฟล์ .txt ทั้งหมดใน data/policies แล้วทำ chunking"""
+        self.chunks = []
         if not os.path.exists(self.policy_dir):
-            print(f"❌ Error: Directory '{self.policy_dir}' not found.")
-            return chunks
+            return
 
         for filename in os.listdir(self.policy_dir):
             if filename.endswith(".txt"):
-                filepath = os.path.join(self.policy_dir, filename)
-                with open(filepath, "r", encoding="utf-8") as f:
+                file_path = os.path.join(self.policy_dir, filename)
+                with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read()
-                    
-                # วนลูปแบ่ง content ออกเป็น Chunk ตามขนาดที่กำหนดใน chunk_size
-                # range(0, len(content), chunk_size)
-                # = เริ่มที่ตำแหน่ง 0 ไปจนถึงความยาวของ content
-                # โดยเพิ่มตำแหน่งครั้งละ chunk_size
-                for i in range(0, len(content), chunk_size):
-                    
-                    # ตัดข้อความตั้งแต่ตำแหน่ง i ไปจนถึง i + chunk_size
-                    # .strip() ใช้ลบช่องว่างหรือขึ้นบรรทัดใหม่ที่อยู่ต้นและท้ายข้อความ
-                    chunk_text = content[i:i + chunk_size].strip()
-                    
-                    # ตรวจสอบว่า Chunk นี้มีข้อความอยู่จริงหรือไม่
-                    # ถ้าไม่ใช่ข้อความว่าง จึงนำไปเก็บใน chunks
-                    if chunk_text:
-                        # เก็บข้อมูลของ Chunk ในรูปแบบ Dictionary
-                        chunks.append({
-                            "source": filename,  # บันทึกชื่อไฟล์ต้นทางสำหรับทำ Grounding / Policy Citations
-                            "text": chunk_text   # ข้อความเนื้อหาของ Chunk
+                    lines = [line.strip() for line in content.split("\n") if line.strip()]
+                    current_chunk = []
+                    current_len = 0
+                    for line in lines:
+                        current_chunk.append(line)
+                        current_len += len(line)
+                        if current_len >= 250:
+                            self.chunks.append({
+                                "source": filename,
+                                "text": "\n".join(current_chunk)
+                            })
+                            current_chunk = []
+                            current_len = 0
+                    if current_chunk:
+                        self.chunks.append({
+                            "source": filename,
+                            "text": "\n".join(current_chunk)
                         })
-        return chunks
 
-    def search_policies(self, query: str, top_k: int = 3) -> list[dict]:
-        """ค้นหา Chunks ที่มีคำสำคัญตรงกับ Query และตัดเอาเฉพาะ top_k ลำดับแรก"""
-        results = []
-        query_lower = query.lower()
+    def search_policies(self, query: str, top_k: int = 3) -> List[Dict[str, str]]:
+        """ค้นหาชิ้นส่วนนโยบายที่ตรงกับคำค้นหา"""
+        if not self.chunks:
+            self.load_and_chunk_policies()
+
+        tokens = [t.lower() for t in query.split() if len(t) > 2]
+        scored_chunks = []
+
         for chunk in self.chunks:
-            if query_lower in chunk["text"].lower():
-                results.append(chunk)
-                if len(results) >= top_k:
-                    break
+            score = 0
+            text_lower = chunk["text"].lower()
+            for token in tokens:
+                if token in text_lower:
+                    score += 1
+            if score > 0:
+                scored_chunks.append((score, chunk))
+
+        scored_chunks.sort(key=lambda x: x[0], reverse=True)
+        results = [item[1] for item in scored_chunks[:top_k]]
+
+        # ถ้าไม่พบคีย์เวิร์ด ให้ fallback ดึงก้อนตั้งต้นจาก routing และ sla
+        if not results:
+            fallback = [c for c in self.chunks if c["source"] in ["routing_policy.txt", "sla_policy.txt"]]
+            return fallback[:top_k]
+
         return results
-    ## top_k คือจำนวนสูงสุดของผลลัพธ์ที่ต้องการดึงออกมา เช่น top_k=3 หมายถึงดึง Chunk ที่ตรงกับ Query มากที่สุด 3 ชิ้นแรก เช่น ถ้าค้นหาคำว่า "billing" แล้วเจอ 5 ชิ้น แต่ top_k=3 ก็จะได้แค่ 3 ชิ้นแรกที่ตรงกับคำค้นหา
 
-    # --- บล็อกทดสอบการทำงานของ RAG Ingestion และ Keyword Retrieval ผ่าน Terminal ---
-    if __name__ == "__main__":
-        rag = RAGService()
-        print(f"📂 Loaded policies from: {rag.policy_dir}")
-        print(f"✅ Total Chunks Loaded: {len(rag.chunks)}")
-
-        # ยิงทดสอบค้นหาคำว่า billing ว่าดึงข้อมูลนโยบายออกมาได้ครบถ้วนหรือไม่
-        results = rag.search_policies("billing")
-        print(f"\n🔍 Found {len(results)} matching chunks for 'billing':\n")
-        for r in results:
-            print(f"- [{r['source']}] {r['text'][:100]}...")
-            
-        
+rag_service = RAGService()
