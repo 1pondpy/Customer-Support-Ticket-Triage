@@ -2,7 +2,10 @@ import os
 import json
 import asyncio
 from typing import List, Dict, Any, Tuple
+from dotenv import load_dotenv, find_dotenv
 from groq import Groq
+
+load_dotenv(find_dotenv())
 
 from app.schemas.ticket import TicketInput
 from app.schemas.triage import TriageResult, TicketCategory, TicketPriority
@@ -13,9 +16,9 @@ rag_service = RAGService(policy_dir="data/policies")
 
 def get_client() -> Groq:
     """สร้าง Groq Client อย่างปลอดภัย"""
-    api_key = settings.GROQ_API_KEY or os.getenv("GROQ_API_KEY")
+    api_key = os.getenv("GROQ_API_KEY") or getattr(settings, "GROQ_API_KEY", None)
     if not api_key:
-        raise ValueError("API Key not found. Please set GROQ_API_KEY in your .env file.")
+        raise ValueError("GROQ_API_KEY not found. Please check your .env file.")
     return Groq(api_key=api_key)
 
 def intent_router_agent(ticket: TicketInput) -> TicketCategory:
@@ -105,7 +108,7 @@ def triage_ticket_with_llm(ticket: TicketInput) -> TriageResult:
     # 3. Reasoning via Groq LLM
     expert_instruction = get_domain_expert_instruction(category)
     client = get_client()
-    model_name = settings.MODEL_NAME or "llama-3.3-70b-versatile"
+    model_name = settings.MODEL_NAME or "openai/gpt-oss-20b"
 
     ticket_payload = {
         "subject": ticket.subject,
@@ -126,6 +129,8 @@ Do not include priority or escalate in your decision.
 === INCOMING TICKET ===
 {json.dumps(ticket_payload, ensure_ascii=False, indent=2)}
 """
+
+    model_name = "llama-3.1-8b-instant"
 
     response = client.chat.completions.create(
         model=model_name,
