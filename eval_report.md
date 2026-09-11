@@ -2,10 +2,10 @@
 
 ## 1. Executive Summary
 
-This evaluation report presents the empirical benchmark results for the **Customer Support Ticket Triage Multi-Agent System** for **Iteration 3 (v1.0.0 "Demo Day")**. The system was evaluated using an automated offline test harness (`evaluate.py`) against the expanded **Full Gold Dataset (30 curated multi-industry test cases)** derived from `sample.csv`[cite: 1, 2].
+This evaluation report presents the empirical benchmark results for the **Customer Support Ticket Triage Multi-Agent System** for **Iteration 3 (v1.0.0 "Demo Day")**. The system was evaluated using an automated offline test harness (`evaluate.py`) against the expanded **Full Gold Dataset (30 curated multi-industry test cases)** derived from `sample.csv`.
 
 - **Target Model / Engine:** `openai/gpt-oss-20b` via Groq Cloud High-Speed Inference API
-- **Evaluation Dataset:** `data/gold_dataset.json` (30 ground-truth tickets across 8 PRD categories)[cite: 1, 2]
+- **Evaluation Dataset:** `data/gold_dataset.json` (30 ground-truth tickets across 8 PRD categories)
 - **Evaluation Methodology:** Multi-Domain Intent Routing, MoE Specialist Prompting, Deterministic SLA & Priority Scoring, and Grounding Judge Verification
 - **PRD Compliance Status:** **PASSED ALL THRESHOLDS** (Exceeded all Demo Day target benchmarks)
 
@@ -17,27 +17,27 @@ The system was evaluated against the formal PRD thresholds required for the Demo
 
 | Metric | PRD Target Benchmark | Iteration 2 Baseline (6 Cases) | Iteration 3 Final (30 Cases) | Milestone Status |
 | :--- | :---: | :---: | :---: | :---: |
-| **Category Accuracy** | >= 85.0% | 66.7% (4/6)[cite: 2] | **96.7%** (29/30) | **PASSED** |
-| **Priority Exact Match** | Informational | 83.3% (5/6)[cite: 2] | **66.7%** (20/30) | **Recorded** |
+| **Category Accuracy** | >= 85.0% | 66.7% (4/6) | **96.7%** (29/30) | **PASSED** |
+| **Priority Exact Match** | Informational | 83.3% (5/6) | **66.7%** (20/30) | **Recorded** |
 | **Priority Within 1-Level** | >= 80.0% | 100.0% (6/6) | **96.7%** (29/30) | **PASSED** |
-| **Queue Match Accuracy** | Informational | 66.7% (4/6)[cite: 2] | **96.7%** (29/30) | **PASSED** |
+| **Queue Match Accuracy** | Informational | 66.7% (4/6) | **96.7%** (29/30) | **PASSED** |
 | **Escalation Recall (TP Target)** | **100.0%** | 100.0% (1/1) | **100.0%** (7/7) | **PERFECT** |
-| **Average Response Latency** | < 5.0s (Target) | 8.08s[cite: 2] | **5.27s** | **ACCEPTABLE** |
+| **Average Response Latency** | < 5.0s (Target) | 8.08s | **5.27s** | **ACCEPTABLE** |
 
 ---
 
 ## 3. Case-by-Case Evaluation Breakdown (30 Cases)
 
-Evaluation results across the 30 curated test cases from `data/gold_dataset.json`[cite: 1, 2]:
+Evaluation results across the 30 curated test cases from `data/gold_dataset.json`:
 
 | Case ID | Subject / Topic | Latency | Category Match | Priority Match | Queue Match | Escalate Match |
 | :---: | :--- | :---: | :---: | :---: | :---: | :---: |
-| `gold_01` | iOS App Keyboard Crash and Notification Bug[cite: 2] | 1.33s | technical (OK) | P2 vs P3 (+-1) | tech_support_queue (OK)[cite: 2] | False (OK)[cite: 2] |
-| `gold_02` | Support Channel Outage - LiveChat & Phone Down[cite: 2] | 1.29s | technical (OK) | P1 vs P1 (Exact)[cite: 2] | tech_support_queue (OK)[cite: 2] | True (OK)[cite: 2] |
-| `gold_03` | Spotify Premium Playback Skipping Issue[cite: 2] | 1.47s | technical (OK) | P2 vs P2 (Exact) | tech_support_queue (OK) | False (OK) |
-| `gold_04` | Sprint Service Refund Request[cite: 2] | 1.19s | billing (OK)[cite: 2] | P2 vs P2 (Exact)[cite: 2] | billing_default_queue (OK)[cite: 2] | False (OK)[cite: 2] |
-| `gold_05` | Store Access Verification Code Issue[cite: 2] | 1.05s | account (OK)[cite: 2] | P3 vs P3 (Exact)[cite: 2] | account_security_queue (OK) | False (OK)[cite: 2] |
-| `gold_06` | Store Policy Inquiry and ID Challenge Complaint[cite: 2] | 1.05s | other (OK) | P3 vs P4 (+-1) | general_triage_queue (OK)[cite: 2] | False (OK)[cite: 2] |
+| `gold_01` | iOS App Keyboard Crash and Notification Bug | 1.33s | technical (OK) | P2 vs P3 (+-1) | tech_support_queue (OK) | False (OK) |
+| `gold_02` | Support Channel Outage - LiveChat & Phone Down | 1.29s | technical (OK) | P1 vs P1 (Exact) | tech_support_queue (OK) | True (OK) |
+| `gold_03` | Spotify Premium Playback Skipping Issue | 1.47s | technical (OK) | P2 vs P2 (Exact) | tech_support_queue (OK) | False (OK) |
+| `gold_04` | Sprint Service Refund Request | 1.19s | billing (OK) | P2 vs P2 (Exact) | billing_default_queue (OK) | False (OK) |
+| `gold_05` | Store Access Verification Code Issue | 1.05s | account (OK) | P3 vs P3 (Exact) | account_security_queue (OK) | False (OK) |
+| `gold_06` | Store Policy Inquiry and ID Challenge Complaint | 1.05s | other (OK) | P3 vs P4 (+-1) | general_triage_queue (OK) | False (OK) |
 | `gold_07` | Production DB Crash Across Regions | 1.40s | technical (OK) | P1 vs P1 (Exact) | tech_support_queue (OK) | True (OK) |
 | `gold_08` | Direct Money Back Request for Cancelled Order | 1.36s | refund (OK) | P2 vs P2 (Exact) | refund_expert_queue (OK) | False (OK) |
 | `gold_09` | Where is my parcel delivery? | 1.20s | shipping (OK) | P3 vs P3 (Exact) | shipping_logistics_queue (OK) | False (OK) |
@@ -80,6 +80,6 @@ The evaluation revealed a single classification discrepancy out of 30 test cases
 
 ## 5. Architectural Progression: Iteration 2 vs Iteration 3
 
-* **Scalability & Coverage:** The test evaluation expanded from a 6-case sanity check to a 30-case full gold benchmark across 8 domains[cite: 1, 2].
+* **Scalability & Coverage:** The test evaluation expanded from a 6-case sanity check to a 30-case full gold benchmark across 8 domains.
 * **Disambiguation Improvements:** The transition from naive prompt instructions to regular expression weighted scoring and collision guards resolved historical ambiguities in `gold_04` and `gold_05`.
 * **Zero Escalation Leakage:** Maintained a 100% recall rate for P1 emergency incidents across outages, enterprise SLA triggers, and cybersecurity breaches.
