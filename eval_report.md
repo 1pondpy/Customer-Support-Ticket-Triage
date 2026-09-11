@@ -81,5 +81,5 @@ The evaluation revealed a single classification discrepancy out of 30 test cases
 ## 5. Architectural Progression: Iteration 2 vs Iteration 3
 
 * **Scalability & Coverage:** The test evaluation expanded from a 6-case sanity check to a 30-case full gold benchmark across 8 domains[cite: 1, 2].
-* **Disambiguation Improvements:** The transition from naive prompt instructions to regular expression weighted scoring and collision guards resolved historical ambiguities in `gold_04` and `gold_05`[cite: 2].
+* **Disambiguation Improvements:** The transition from naive prompt instructions to regular expression weighted scoring and collision guards resolved historical ambiguities in `gold_04` and `gold_05`.
 * **Zero Escalation Leakage:** Maintained a 100% recall rate for P1 emergency incidents across outages, enterprise SLA triggers, and cybersecurity breaches.
