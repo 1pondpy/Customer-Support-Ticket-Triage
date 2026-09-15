@@ -85,19 +85,25 @@
                 <p id="file-name-display" class="text-[11px] text-slate-400 mt-1">ยังไม่ได้เลือกไฟล์</p>
             </div>
 
-            <textarea id="batch-input" rows="6" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs font-mono text-slate-200">[
+            <!-- กล่อง Input ขยายขนาด rows="12" เพื่อให้อ่านและวางข้อมูลหลายเคสได้สะดวก -->
+            <div>
+                <label class="block text-xs text-slate-400 mb-1">Batch Input (JSON Array):</label>
+                <textarea id="batch-input" rows="12" class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-xs font-mono text-slate-200 min-h-[220px] focus:outline-none focus:border-indigo-500">[
   {"subject": "iPhone app crash", "body": "App quits after splash screen", "customer_tier": "free"},
   {"subject": "Overcharge on subscription", "body": "Billed twice for annual plan", "customer_tier": "pro"},
   {"subject": "Cannot reset password", "body": "Verification code not received on phone", "customer_tier": "free"}
 ]</textarea>
+            </div>
             
             <div class="flex space-x-3">
                 <button onclick="submitBatch()" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded text-sm font-semibold transition">Run Batch Triage</button>
                 <button onclick="clearBatch()" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded text-sm text-slate-300 transition">Clear</button>
             </div>
             
-            <div id="batch-output" class="mt-4 text-xs font-mono bg-slate-900 p-3 rounded border border-slate-700 max-h-60 overflow-y-auto text-slate-400">
-                ผลลัพธ์การคัดแยกตั๋วแบบ Batch จะแสดงที่นี่...
+            <!-- กล่อง Output ใช้ <pre> พร้อม whitespace-pre เพื่อคงรูปแบบ Indent และ Spacing ของ JSON -->
+            <div>
+                <label class="block text-xs text-slate-400 mb-1">Batch Results Output:</label>
+                <pre id="batch-output" class="text-xs font-mono bg-slate-900 p-4 rounded border border-slate-700 max-h-[400px] overflow-y-auto overflow-x-auto text-emerald-400 whitespace-pre leading-relaxed">ผลลัพธ์การคัดแยกตั๋วแบบ Batch จะแสดงที่นี่...</pre>
             </div>
         </div>
 
@@ -161,7 +167,6 @@
             }
         };
 
-        // โหลดข้อมูลใส่ Form อย่างเดียว ไม่สั่ง Submit อัตโนมัติ
         function loadTestCase(key) {
             const tc = PRESETS[key];
             if (!tc) return;
@@ -170,7 +175,7 @@
             document.getElementById('tier').value = tc.tier;
 
             const out = document.getElementById('single-output');
-            out.innerHTML = '<p class="text-indigo-300 italic">โหลดข้อมูลสำเร็จ กดปุ่ม "Execute MoE Triage" เพื่อส่งข้อมูลประมวลผล</p>';
+            out.innerHTML = '<p class="text-indigo-300 italic">โหลดข้อมูล Preset สำเร็จ กดปุ่ม "Execute MoE Triage" เพื่อเริ่มการวิเคราะห์</p>';
         }
 
         function switchTab(tab) {
@@ -261,13 +266,13 @@
             document.getElementById('batch-input').value = '[]';
             document.getElementById('file-name-display').innerText = 'ยังไม่ได้เลือกไฟล์';
             document.getElementById('batch-file-input').value = '';
-            document.getElementById('batch-output').innerText = 'ผลลัพธ์การคัดแยกตั๋วแบบ Batch จะแสดงที่นี่...';
+            document.getElementById('batch-output').textContent = 'ผลลัพธ์การคัดแยกตั๋วแบบ Batch จะแสดงที่นี่...';
         }
 
         async function submitBatch() {
             const raw = document.getElementById('batch-input').value;
             const out = document.getElementById('batch-output');
-            out.innerText = "Processing batch queue...";
+            out.textContent = "Processing batch queue...";
             try {
                 const tickets = JSON.parse(raw);
                 const res = await fetch('/tickets/triage/batch', {
@@ -276,9 +281,9 @@
                     body: JSON.stringify({tickets})
                 });
                 const data = await res.json();
-                out.innerText = JSON.stringify(data, null, 2);
+                out.textContent = JSON.stringify(data, null, 2);
             } catch(e) {
-                out.innerText = "Error: " + e.message;
+                out.textContent = "Error: " + e.message;
             }
         }
     </script>
