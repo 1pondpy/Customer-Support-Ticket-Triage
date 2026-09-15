@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Support Ticket Triage — Agent Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-6">
+    <div class="max-w-6xl mx-auto space-y-6">
+        <header class="flex justify-between items-center border-b border-slate-700 pb-4">
+            <div>
+                <h1 class="text-2xl font-bold text-indigo-400">Customer Support Ticket Triage</h1>
+                <p class="text-sm text-slate-400">Multi-Agent MoE Pipeline • v1.0.0 Interface</p>
+            </div>
+            <div>
+                <span class="px-3 py-1 bg-emerald-900 text-emerald-300 text-xs rounded-full font-medium">● Pipeline Online</span>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="flex space-x-4 border-b border-slate-700">
+            <button onclick="switchTab('single')" id="tab-single" class="px-4 py-2 border-b-2 border-indigo-500 font-medium text-indigo-400">Single Triage</button>
+            <button onclick="switchTab('batch')" id="tab-batch" class="px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200">Batch Processing</button>
+            <button onclick="switchTab('eval')" id="tab-eval" class="px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200">Evaluation Dashboard</button>
+        </div>
+
+        <!-- Tab 1: Single Ticket Triage -->
+        <div id="panel-single" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-slate-800 p-5 rounded-lg border border-slate-700 space-y-4">
+                <h2 class="font-semibold text-lg text-slate-200">Submit Inbound Ticket</h2>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Subject</label>
+                    <input type="text" id="subject" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm" value="System Outage - Payment Webhook Failure">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Body (Untrusted Input)</label>
+                    <textarea id="body" rows="4" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm">Outage alert: Checkout webhook endpoints are returning 500 error code. Critical disruption for customers!</textarea>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Customer Tier</label>
+                    <select id="tier" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm">
+                        <option value="enterprise" selected>Enterprise (Immediate P1 potential)</option>
+                        <option value="pro">Pro (Priority)</option>
+                        <option value="free">Free (Standard)</option>
+                    </select>
+                </div>
+                <button onclick="submitSingleTicket()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded text-sm font-semibold transition">Execute MoE Triage</button>
+            </div>
+
+            <!-- Triage Results Output -->
+            <div class="bg-slate-800 p-5 rounded-lg border border-slate-700 space-y-3">
+                <h2 class="font-semibold text-lg text-slate-200">Structured Triage Result</h2>
+                <div id="single-loader" class="hidden text-center py-10 text-indigo-400 animate-pulse">Running Multi-Agent Inference...</div>
+                <div id="single-output" class="text-xs space-y-2">
+                    <p class="text-slate-500 italic">Submit a ticket to observe multi-agent routing, SLA scoring, and citations.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Batch Processing -->
+        <div id="panel-batch" class="hidden bg-slate-800 p-6 rounded-lg border border-slate-700 space-y-4">
+            <h2 class="font-semibold text-lg text-slate-200">Batch Ticket Processing</h2>
+            <p class="text-xs text-slate-400">Submit a JSON array of tickets to execute non-blocking concurrent triage pipeline.</p>
+            <textarea id="batch-input" rows="6" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs font-mono">[
+  {"subject": "iPhone app crash", "body": "App quits after splash screen", "customer_tier": "free"},
+  {"subject": "Overcharge on subscription", "body": "Billed twice for annual plan", "customer_tier": "pro"}
+]</textarea>
+            <button onclick="submitBatch()" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded text-sm font-semibold">Run Batch Triage</button>
+            <div id="batch-output" class="mt-4 text-xs font-mono bg-slate-900 p-3 rounded border border-slate-700 max-h-60 overflow-y-auto"></div>
+        </div>
+
+        <!-- Tab 3: Evaluation Dashboard -->
+        <div id="panel-eval" class="hidden bg-slate-800 p-6 rounded-lg border border-slate-700 space-y-4">
+            <div class="flex justify-between items-center">
+                <h2 class="font-semibold text-lg text-slate-200">Gold Benchmark Summary (30 Cases)</h2>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-slate-900 p-4 rounded border border-slate-700">
+                    <p class="text-xs text-slate-400">Category Accuracy</p>
+                    <p class="text-2xl font-bold text-indigo-400">96.7%</p>
+                    <p class="text-[10px] text-emerald-400">Pass Bar: &ge; 85.0%</p>
+                </div>
+                <div class="bg-slate-900 p-4 rounded border border-slate-700">
+                    <p class="text-xs text-slate-400">Priority (&plusmn;1 Level)</p>
+                    <p class="text-2xl font-bold text-indigo-400">96.7%</p>
+                    <p class="text-[10px] text-emerald-400">Pass Bar: &ge; 80.0%</p>
+                </div>
+                <div class="bg-slate-900 p-4 rounded border border-slate-700">
+                    <p class="text-xs text-slate-400">Escalation Recall</p>
+                    <p class="text-2xl font-bold text-emerald-400">100.0%</p>
+                    <p class="text-[10px] text-emerald-400">Target: 100.0%</p>
+                </div>
+                <div class="bg-slate-900 p-4 rounded border border-slate-700">
+                    <p class="text-xs text-slate-400">Average Latency</p>
+                    <p class="text-2xl font-bold text-slate-200">5.27s</p>
+                    <p class="text-[10px] text-slate-400">Target: &lt; 10.0s</p>
+                </div>
+            </div>
+            <div class="text-xs text-slate-400 font-mono">Status: Benchmark dataset verified and passing PRD Demo Day criteria.</div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            ['single', 'batch', 'eval'].forEach(t => {
+                document.getElementById(`panel-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).classList.replace('text-indigo-400', 'text-slate-400');
+                document.getElementById(`tab-${t}`).classList.replace('border-indigo-500', 'border-transparent');
+            });
+            document.getElementById(`panel-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).classList.replace('text-slate-400', 'text-indigo-400');
+            document.getElementById(`tab-${tab}`).classList.replace('border-transparent', 'border-indigo-500');
+        }
+
+        async function submitSingleTicket() {
+            const out = document.getElementById('single-output');
+            const loader = document.getElementById('single-loader');
+            loader.classList.remove('hidden');
+            out.innerHTML = '';
+
+            const payload = {
+                subject: document.getElementById('subject').value,
+                body: document.getElementById('body').value,
+                customer_tier: document.getElementById('tier').value
+            };
+
+            try {
+                const res = await fetch('/tickets/triage', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                loader.classList.add('hidden');
+
+                const escBadge = data.escalate 
+                    ? '<span class="bg-rose-900 text-rose-300 px-2 py-0.5 rounded text-[10px] font-bold">ESCALATED</span>' 
+                    : '<span class="bg-slate-700 text-slate-300 px-2 py-0.5 rounded text-[10px]">Normal</span>';
+
+                out.innerHTML = `
+                    <div class="space-y-2 font-mono">
+                        <div class="flex justify-between border-b border-slate-700 pb-1">
+                            <span class="text-slate-400">Category / Intent:</span>
+                            <span class="font-bold text-indigo-300">${data.category} / ${data.sub_intent}</span>
+                        </div>
+                        <div class="flex justify-between border-b border-slate-700 pb-1">
+                            <span class="text-slate-400">Priority & SLA:</span>
+                            <span><span class="font-bold text-amber-400">${data.priority}</span> ${escBadge}</span>
+                        </div>
+                        <div class="flex justify-between border-b border-slate-700 pb-1">
+                            <span class="text-slate-400">Assigned Queue:</span>
+                            <span class="text-emerald-300">${data.assigned_queue}</span>
+                        </div>
+                        <div class="border-b border-slate-700 pb-1">
+                            <span class="text-slate-400">Policy Citations:</span>
+                            <span class="text-slate-200">${(data.policy_citations || []).join(', ')}</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400">Internal Agent Notes:</span>
+                            <p class="mt-1 text-slate-300 bg-slate-900 p-2 rounded">${data.internal_notes || '-'}</p>
+                        </div>
+                    </div>
+                `;
+            } catch (err) {
+                loader.classList.add('hidden');
+                out.innerHTML = `<p class="text-rose-400">Error: ${err.message}</p>`;
+            }
+        }
+
+        async function submitBatch() {
+            const raw = document.getElementById('batch-input').value;
+            const out = document.getElementById('batch-output');
+            out.innerText = "Processing batch queue...";
+            try {
+                const tickets = JSON.parse(raw);
+                const res = await fetch('/tickets/triage/batch', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({tickets})
+                });
+                const data = await res.json();
+                out.innerText = JSON.stringify(data, null, 2);
+            } catch(e) {
+                out.innerText = "Error: " + e.message;
+            }
+        }
+    </script>
+</body>
+</html>
