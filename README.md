@@ -21,12 +21,12 @@ The system delivers an asynchronous, multi-agent Mixture-of-Experts (MoE) pipeli
 - [Evaluation Benchmark](#evaluation-benchmark)
 - [Sample Requests & Responses](#sample-requests--responses)
 - [Running the Project](#running-the-project)
-- [Current Limitations & Future Roadmap](#current-limitations--future-roadmap)
-- [Authors](#authors)
-- [License](#license)
 - [Agent Dashboard UI](#agent-dashboard-ui)
 - [Security & Guardrails](#security-guardrails)
 - [Prompt Versioning Registry](#prompt-versioning-registry)
+- [Current Limitations & Future Roadmap](#current-limitations--future-roadmap)
+- [Authors](#authors)
+- [License](#license)
 
 ---
 
