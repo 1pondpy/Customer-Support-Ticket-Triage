@@ -1,18 +1,16 @@
 """
 Security Guardrails Module:
 - Untrusted Input Sanitization & Prompt Injection Mitigation
-- PII Redaction for Secure Logging (No PII in logs beyond ticket ID)
+- PII Redaction for Secure Audit Logging (No PII in logs beyond ticket ID)
 """
 
 import re
 import logging
 from typing import Tuple, Dict, Any
 
-# Logging Configuration strictly forbidding PII leakage
 logger = logging.getLogger("triage_security")
 logger.setLevel(logging.INFO)
 
-# High-risk Prompt Injection Heuristic Patterns
 INJECTION_SIGNATURES = [
     r"ignore\s+(all\s+)?previous\s+instructions",
     r"disregard\s+(all\s+)?prior\s+prompts",
@@ -24,7 +22,6 @@ INJECTION_SIGNATURES = [
     r"override\s+sla"
 ]
 
-# PII Regex Matchers
 PII_PATTERNS = {
     "credit_card": r"\b(?:\d{4}[-\s]?){3}\d{4}\b",
     "email": r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b",
@@ -40,15 +37,11 @@ def sanitize_untrusted_input(text: str) -> Tuple[str, bool, str]:
     for pattern in INJECTION_SIGNATURES:
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
-            threat = match.group(0)
-            return text, False, f"Prompt injection pattern detected: '{threat}'"
-            
+            return text, False, f"Prompt injection pattern detected: '{match.group(0)}'"
     return text, True, "OK"
 
 def redact_pii_for_logging(raw_text: str) -> str:
-    """
-    Redacts sensitive personal identifiable information before writing to logs.
-    """
+    """Redacts sensitive personal identifiable information before writing to logs."""
     redacted = raw_text
     redacted = re.sub(PII_PATTERNS["credit_card"], "[REDACTED_CARD]", redacted)
     redacted = re.sub(PII_PATTERNS["email"], "[REDACTED_EMAIL]", redacted)
@@ -57,9 +50,7 @@ def redact_pii_for_logging(raw_text: str) -> str:
     return redacted
 
 def secure_audit_log(ticket_id: str, action: str, details: Dict[str, Any]):
-    """
-    Safe audit logger strictly adhering to: 'No PII in logs beyond ticket ID'.
-    """
+    """Safe audit logger strictly adhering to: 'No PII in logs beyond ticket ID'."""
     safe_details = {
         k: redact_pii_for_logging(str(v)) if isinstance(v, str) else v
         for k, v in details.items()
