@@ -1,22 +1,36 @@
 """
-Prompt Versioning Registry for Multi-Agent MoE Triage System.
-Complies with Iteration 3 v1.0.0 requirements.
+Prompt Versioning Registry for Multi-Agent Mixture-of-Experts (MoE) Architecture.
+Adheres to Iteration 3 v1.0.0 deliverable requirements.
 """
 
 from typing import Dict, Any
 
 PROMPT_REGISTRY: Dict[str, Dict[str, Any]] = {
+    "v0.1.0": {
+        "release_date": "2026-02-10",
+        "description": "Walking skeleton baseline mock prompts.",
+        "prompts": {
+            "router": "Mock router prompt"
+        }
+    },
+    "v0.2.0": {
+        "release_date": "2026-03-01",
+        "description": "Single-agent delimiter-enforced prompt with RAG grounding.",
+        "prompts": {
+            "router": "You are a customer support triage agent. Categorize the ticket and ground using policy context."
+        }
+    },
     "v1.0.0": {
         "release_date": "2026-03-30",
-        "description": "Multi-Agent Mixture-of-Experts System Prompts with Deterministic Grounding",
+        "description": "Production Multi-Agent MoE prompts with strict guardrails and deterministic grounding.",
         "prompts": {
             "router": (
                 "You are an Intent Router Agent. Classify the customer support ticket into exactly "
-                "one of the 8 canonical domains: technical, billing, refund, account, shipping, "
+                "one of the canonical categories: technical, billing, refund, account, shipping, "
                 "security, feedback, other. Avoid hallucinating queues."
             ),
             "technical": (
-                "You are a Technical Support Specialist. Analyze application bugs, crashes, 500 error codes, "
+                "You are a Technical Support Specialist. Analyze application bugs, crashes, 500 errors, "
                 "and service outage alerts. Route to tech_support_queue."
             ),
             "billing": (
@@ -24,7 +38,7 @@ PROMPT_REGISTRY: Dict[str, Dict[str, Any]] = {
                 "Route to billing_default_queue."
             ),
             "refund": (
-                "You are a Refund Specialist. Inspect eligibility for money back and subscription charge cancellations. "
+                "You are a Refund Specialist. Inspect eligibility for money back and charge cancellations. "
                 "Route to refund_expert_queue."
             ),
             "account": (
@@ -42,22 +56,12 @@ PROMPT_REGISTRY: Dict[str, Dict[str, Any]] = {
 CURRENT_PROMPT_VERSION = "v1.0.0"
 
 def get_system_prompt(role: str, version: str = CURRENT_PROMPT_VERSION) -> str:
-    """
-    Retrieve versioned system prompt by agent role.
-    """
-    ver_data = PROMPT_REGISTRY.get(version)
-    if not ver_data:
-        ver_data = PROMPT_REGISTRY[CURRENT_PROMPT_VERSION]
-    
-    return ver_data["prompts"].get(
-        role, 
-        "You are a helpful customer support triage assistant."
-    )
+    """Retrieve versioned system prompt by role and target semantic version."""
+    ver_data = PROMPT_REGISTRY.get(version, PROMPT_REGISTRY[CURRENT_PROMPT_VERSION])
+    return ver_data["prompts"].get(role, "You are a helpful customer support triage assistant.")
 
 def list_prompt_versions() -> Dict[str, Any]:
-    """
-    Return all registered prompt versions and their metadata.
-    """
+    """Inspect all prompt versions, release notes, and supported roles."""
     return {
         "current_active_version": CURRENT_PROMPT_VERSION,
         "versions": {
