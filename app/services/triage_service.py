@@ -11,6 +11,7 @@ load_dotenv(find_dotenv())
 from app.schemas.ticket import TicketInput
 from app.schemas.triage import TriageResult, TicketCategory, TicketPriority
 from app.services.rag_service import RAGService
+from app.services.security_guardrail import sanitize_untrusted_input, secure_audit_log
 from app.config import settings
 
 rag_service = RAGService(policy_dir="data/policies")
@@ -172,6 +173,33 @@ def judge_agent(draft_result: Dict[str, Any], retrieved_citations: List[str]) ->
     return citations, judge_verdict
 
 def triage_ticket_with_llm(ticket: TicketInput) -> TriageResult:
+    # 0. Security Guardrail: สแกน Untrusted Input ดักจับ Prompt Injection
+    combined_input = f"{ticket.subject} {ticket.body}"
+    _, is_safe, threat_desc = sanitize_untrusted_input(combined_input)
+
+    if not is_safe:
+        ticket_id = "ANON"
+        if ticket.metadata and isinstance(ticket.metadata, dict):
+            ticket_id = str(ticket.metadata.get("ticket_id", "ANON"))
+
+        secure_audit_log(
+            ticket_id=ticket_id,
+            action="INJECTION_BLOCKED",
+            details={"threat": threat_desc, "subject": ticket.subject}
+        )
+        return TriageResult(
+            category="other",
+            sub_intent="security_threat_flagged",
+            priority="P3",
+            assigned_queue="general_triage_queue",
+            industry="security",
+            suggested_macro_id=None,
+            internal_notes=f"[SECURITY SHIELD]: Blocked adversarial prompt injection payload ({threat_desc}). Routed to manual security inspection queue.",
+            policy_citations=["routing_policy.txt"],
+            confidence=0.10,
+            escalate=False
+        )
+
     # 1. Intent Router Agent
     category = intent_router_agent(ticket)
 
@@ -239,4 +267,4 @@ Do not include priority or escalate in your decision.
 
 async def triage_ticket_async(ticket: TicketInput) -> TriageResult:
     loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(None, triage_ticket_with_llm, ticket)
+    return await loop.run_in_executor(None, triage_ticket_with_llm, ticket) 
