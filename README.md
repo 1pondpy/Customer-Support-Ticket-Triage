@@ -24,6 +24,9 @@ The system delivers an asynchronous, multi-agent Mixture-of-Experts (MoE) pipeli
 - [Current Limitations & Future Roadmap](#current-limitations--future-roadmap)
 - [Authors](#authors)
 - [License](#license)
+- [Agent Dashboard UI](#agent-dashboard-ui)
+- [Security & Guardrails](#security-guardrails)
+- [Prompt Versioning Registry](#prompt-versioning-registry)
 
 ---
 
@@ -285,6 +288,7 @@ The repository includes processed policy documents, macro response catalogs, a 3
 1. **`POST /tickets/triage`** — Receives a single ticket payload and returns a validated triage classification.
 2. **`POST /tickets/triage/batch`** — Processes multiple tickets in parallel using non-blocking worker pools (`asyncio.gather`).
 3. **`GET /policies/search`** — Debug utility endpoint to inspect chunked retrieval contexts and test RAG query matching.
+4. **`POST /evaluate`** — Automated benchmark harness endpoint executing the 30-case Gold Dataset with pure latency pacing and threshold validation.
 
 ---
 
@@ -379,11 +383,38 @@ Open [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) in your browser.
 
 ---
 
+## Agent Dashboard UI
+
+The system includes a built-in, lightweight operational dashboard hosted natively via FastAPI at `http://127.0.0.1:8000/ui`:
+
+- **Single Triage Tab:** Interactive form equipped with **Quick Fill Presets** (Enterprise Outage P1, Pro Billing Dispute P2, Account Auth P3, Prompt Injection Defense, and Ambiguous Ticket) to evaluate live MoE classification and policy citations.
+- **Batch Processing Tab:** Non-blocking async queue processor supporting raw JSON arrays and **Direct JSON File Uploads** (`.json`).
+- **Evaluation Dashboard Tab:** Real-time metrics visualization displaying benchmark scores against PRD thresholds (Category Accuracy 96.7%, Priority 96.7%, Escalation Recall 100.0%).
+
+---
+
+## Security & Guardrails
+
+- **Adversarial Injection Defense:** Scans incoming ticket bodies for malicious prompt override patterns (e.g., `ignore previous instructions`, `system override`, `you are now DAN`) via `sanitize_untrusted_input()` and routes threats to quarantined inspection.
+- **Strict PII Redaction Logging:** Enforces the PRD requirement of *"No PII in logs beyond ticket ID"* by sanitizing credit cards, email addresses, and phone numbers before recording audit trails via `secure_audit_log()`.
+- **Zero-Hallucination SLA:** Deterministic scoring logic prevents LLM priority drift and enforces strict policy grounding verified by the Judge Agent.
+
+---
+
+## Prompt Versioning Registry
+
+Managed in `app/services/prompt_registry.py`, tracking semantic versioning of system instructions across system iterations:
+
+- `v0.1.0`: Walking skeleton mock prompts.
+- `v0.2.0`: Single-agent delimiter-enforced prompt with RAG grounding.
+- `v1.0.0`: Production Multi-Agent MoE system prompts covering Intent Router, Domain Specialists, and Grounding Judge.
+
+---
+
 ## Current Limitations & Future Roadmap
 
-- **Vector Search Engine:** Keyword chunk retrieval is currently used; vector embeddings (FAISS/ChromaDB) remain planned for production hardening.
-- **Multilingual Support:** Current pattern dictionaries prioritize English support communications.
-- **Agent Dashboard UI:** Frontend operational dashboard integration is scheduled for future milestone releases.
+- **Vector Search Engine:** Keyword chunk retrieval is currently used; dense vector embeddings (ChromaDB/FAISS) are planned for high-scale enterprise knowledge bases.
+- **Multilingual Support:** Pattern dictionaries and policy contexts currently prioritize English support communications.
 
 ---
 
