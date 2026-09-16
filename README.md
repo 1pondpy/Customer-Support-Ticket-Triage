@@ -48,7 +48,7 @@ The system operates as a modular, high-throughput triage backend featuring:
 
 ### System Architecture
 
-![Architecture Diagram](docs/architecture-diagram.png)
+![Architecture Diagram](docs/architecture-diagram.jpg)
 
 ### Multi-Agent Workflow (Mixture-of-Experts)
 
