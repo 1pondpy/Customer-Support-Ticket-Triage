@@ -1,4 +1,4 @@
-# สคริปต์นำเสนอฉบับเดี่ยว (Single Speaker)
+# สคริปต์นำเสนอ
 **Customer Support Ticket Triage Architecture | v1.0.0 Demo Day**
 
 > เวลาประมาณ 7–8 นาที เพื่อเหลือเวลาสำหรับ Q&A
