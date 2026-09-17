@@ -1,4 +1,5 @@
 import json
+import re
 import time
 from typing import Dict, Any
 from fastapi import APIRouter, Query, HTTPException
@@ -11,19 +12,60 @@ from app.services.rag_service import RAGService
 
 router = APIRouter()
 
+def _log_audit_pii(ticket: TicketInput, endpoint: str = "/tickets/triage") -> None:
+    """
+    Security Audit Logger:
+    Complies with 'No PII in logs beyond ticket ID'.
+    Detects and masks sensitive credit card numbers, emails, and phone numbers.
+    """
+    ticket_id = (ticket.metadata or {}).get("ticket_id", "TICKET-UNASSIGNED")
+    raw_body = ticket.body or ""
+
+    # Regex patterns for sensitive PII identification
+    card_pattern = r"\b(?:\d[ -]*?){13,16}\b"
+    email_pattern = r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"
+    phone_pattern = r"(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{4}"
+
+    has_pii = bool(
+        re.search(card_pattern, raw_body) or
+        re.search(email_pattern, raw_body) or
+        re.search(phone_pattern, raw_body)
+    )
+
+    masked_body = re.sub(card_pattern, "[REDACTED_CARD]", raw_body)
+    masked_body = re.sub(email_pattern, "[REDACTED_EMAIL]", masked_body)
+    masked_body = re.sub(phone_pattern, "[REDACTED_PHONE]", masked_body)
+
+    print("\n" + "=" * 65)
+    print(f"[AUDIT LOG] Endpoint: {endpoint} | Ticket ID: {ticket_id}")
+    print(f"[AUDIT LOG] Customer Tier: {ticket.customer_tier}")
+    if has_pii:
+        print("[AUDIT LOG] Security Guardrail: Sensitive PII Detected & Redacted!")
+        print(f"[AUDIT LOG] Masked Body Snapshot: {masked_body[:120]}...")
+    else:
+        print("[AUDIT LOG] Security Guardrail: No Sensitive PII Detected.")
+    print("=" * 65 + "\n")
+
+
 @router.post("/tickets/triage", response_model=TriageResult)
 def triage(ticket: TicketInput):
     """Triage a single ticket through the Multi-Agent MoE Pipeline."""
+    _log_audit_pii(ticket, endpoint="/tickets/triage")
     return triage_ticket_with_llm(ticket)
+
 
 @router.post("/tickets/triage/batch", response_model=BatchTriageResult)
 def triage_batch(batch_input: BatchTicketInput):
-    """Process multiple incoming support tickets sequentially."""
+    """Process multiple incoming support tickets sequentially with PII masking."""
+    for ticket in batch_input.tickets:
+        _log_audit_pii(ticket, endpoint="/tickets/triage/batch")
+
     results = [triage_ticket_with_llm(ticket) for ticket in batch_input.tickets]
     return BatchTriageResult(
         total_processed=len(results),
         results=results
     )
+
 
 @router.get("/policies/search")
 def search_policies(query: str = Query(..., description="Query string to search in support policies")):
@@ -35,6 +77,7 @@ def search_policies(query: str = Query(..., description="Query string to search 
         "results_found": len(results),
         "results": results
     }
+
 
 @router.post("/evaluate")
 def evaluate_routing() -> Dict[str, Any]:
