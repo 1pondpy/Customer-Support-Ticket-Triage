@@ -164,6 +164,7 @@ def get_domain_expert_instruction(category: TicketCategory) -> str:
     return instructions.get(category, instructions["other"])
 
 
+# Deterministic SLA Matrix
 # ==============================================================================
 # [KEYWORD_DETERMINISTIC_SLA] : ควบคุม Priority ด้วย Hard Rules (ไม่ใช้ LLM สุ่ม)
 # ==============================================================================
@@ -180,7 +181,7 @@ def priority_scorer(ticket: TicketInput, category: TicketCategory) -> Tuple[Tick
         return "P3", False, "Triggered P3: Free tier or standard tracking."
     return "P4", False, "Triggered P4: Low-priority general request."
 
-
+# Grounding Citation
 # ==============================================================================
 # [KEYWORD_JUDGE_AGENT] : ตรวจสอบว่า Citation มาจาก Policy จริง ไม่มโน
 # ==============================================================================
@@ -228,6 +229,7 @@ def triage_ticket_with_llm(ticket: TicketInput) -> TriageResult:
     # 1. คัดแยกประเภทตั๋ว
     category = intent_router_agent(ticket)
 
+    ## Policy Grounding
     # --------------------------------------------------------------------------
     # [KEYWORD_RAG_SEARCH] : ดึงนโยบาย 5 ฉบับจากโฟลเดอร์ data/policies
     # --------------------------------------------------------------------------
@@ -250,6 +252,8 @@ def triage_ticket_with_llm(ticket: TicketInput) -> TriageResult:
         "metadata": ticket.metadata or {}
     }
 
+    # Prompt Isolation
+    # Macro Catalog
     # ล็อกพฤติกรรม LLM ห้ามกำหนด Priority หรือ Escalate เอง
     system_content = f"""{expert_instruction}
 Output strictly valid JSON with the following keys:
@@ -257,6 +261,7 @@ Output strictly valid JSON with the following keys:
 Do not include priority or escalate in your decision.
 """
 
+    # Grounding
     # ใช้ Delimiters กั้น Input จากผู้ใช้ ป้องกัน Prompt Leakage
     user_content = f"""=== RETRIEVED POLICIES CONTEXT ===
 {policy_context}
