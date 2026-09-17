@@ -17,22 +17,26 @@ from app.config import settings
 rag_service = RAGService(policy_dir="data/policies")
 
 def get_client() -> Groq:
-    """สร้าง Groq Client อย่างปลอดภัย"""
+    """สร้าง Groq Client สำหรับเชื่อมต่อ Model API"""
     api_key = os.getenv("GROQ_API_KEY") or getattr(settings, "GROQ_API_KEY", None)
     if not api_key:
         raise ValueError("GROQ_API_KEY not found. Please check your .env file.")
     return Groq(api_key=api_key)
 
+
+# ==============================================================================
+# [KEYWORD_COLLISION_GUARDS] : สกัดคำกำกวม ป้องกันหมวดหมู่ตีกัน
+# ==============================================================================
 def intent_router_agent(ticket: TicketInput) -> TicketCategory:
     """
-    Robust Multi-Domain Intent Router
+    Multi-Domain Intent Router
     ใช้ Regular Expressions, Weighted Signals และ Collision Guards ครอบคลุม 8 หมวดหมู่
     """
     subject_text = ticket.subject.lower()
     body_text = ticket.body.lower()
     full_text = f"{subject_text} {body_text}"
 
-    # 1. Collision & Context Guards (สกัดเคสพิเศษที่มีคำกำกวม)
+    # ตรวจจับคำทับซ้อน (เช่น กล้องวงจรปิดกับพัสดุ ให้ไป Shipping ไม่ใช่ Security)
     if any(k in full_text for k in ["security camera", "security footage", "cctv", "porch camera"]):
         if any(k in full_text for k in ["parcel", "package", "deliver", "courier", "fedex", "ups", "wrong house"]):
             return "shipping"
@@ -40,7 +44,9 @@ def intent_router_agent(ticket: TicketInput) -> TicketCategory:
     if "sprint" in full_text and any(k in full_text for k in ["refund", "money back", "service last"]):
         return "billing"
 
-    # 2. Weighted Keyword Dictionaries (กำหนดคลังคำแยกตามโดเมน)
+    # ==============================================================================
+    # [KEYWORD_REGEX_WEIGHTED] : คลังคำศัพท์และถ่วงน้ำหนัก 8 หมวดหมู่
+    # ==============================================================================
     patterns: Dict[TicketCategory, List[str]] = {
         "security": [
             r"\bhack(?:ed|ing)?\b", r"\bbreach(?:ed)?\b", r"\bdata\s*leak\b",
@@ -91,7 +97,7 @@ def intent_router_agent(ticket: TicketInput) -> TicketCategory:
         ]
     }
 
-    # 3. Score Calculation with Subject Weighting
+    # คิดคะแนนถ่วงน้ำหนัก: คำใน Subject x2, คำใน Body x1
     scores: Dict[TicketCategory, float] = {cat: 0.0 for cat in patterns}
 
     for cat, regex_list in patterns.items():
@@ -108,6 +114,10 @@ def intent_router_agent(ticket: TicketInput) -> TicketCategory:
 
     return "other"
 
+
+# ==============================================================================
+# [KEYWORD_SPECIALIST_PROMPTS] : คำสั่งเฉพาะทางของแต่ละ Specialist (MoE)
+# ==============================================================================
 def get_domain_expert_instruction(category: TicketCategory) -> str:
     instructions: Dict[TicketCategory, str] = {
         "technical": (
@@ -153,10 +163,15 @@ def get_domain_expert_instruction(category: TicketCategory) -> str:
     }
     return instructions.get(category, instructions["other"])
 
+
+# ==============================================================================
+# [KEYWORD_DETERMINISTIC_SLA] : ควบคุม Priority ด้วย Hard Rules (ไม่ใช้ LLM สุ่ม)
+# ==============================================================================
 def priority_scorer(ticket: TicketInput, category: TicketCategory) -> Tuple[TicketPriority, bool, str]:
     text = f"{ticket.subject} {ticket.body}".lower()
     is_outage = any(k in text for k in ["outage", "system down", "security breach", "data leak", "critical"])
     
+    # บังคับเป็น P1 เมื่อเป็น Enterprise Outage หรือ Security
     if ticket.customer_tier == "enterprise" or is_outage or category == "security":
         return "P1", True, "Triggered P1/Escalation: Enterprise customer, outage, or security incident."
     elif ticket.customer_tier == "pro" or category in ["billing", "refund", "technical"]:
@@ -165,6 +180,10 @@ def priority_scorer(ticket: TicketInput, category: TicketCategory) -> Tuple[Tick
         return "P3", False, "Triggered P3: Free tier or standard tracking."
     return "P4", False, "Triggered P4: Low-priority general request."
 
+
+# ==============================================================================
+# [KEYWORD_JUDGE_AGENT] : ตรวจสอบว่า Citation มาจาก Policy จริง ไม่มโน
+# ==============================================================================
 def judge_agent(draft_result: Dict[str, Any], retrieved_citations: List[str]) -> Tuple[List[str], str]:
     citations = [c for c in draft_result.get("policy_citations", []) if c in retrieved_citations]
     if not citations:
@@ -172,8 +191,14 @@ def judge_agent(draft_result: Dict[str, Any], retrieved_citations: List[str]) ->
     judge_verdict = f"Verified by Judge Agent: Grounded with {len(citations)} policy source(s)."
     return citations, judge_verdict
 
+
+# ==============================================================================
+# [KEYWORD_MAIN_PIPELINE] : ไปป์ไลน์หลัก รวบรวมทุก Agent เข้าด้วยกัน
+# ==============================================================================
 def triage_ticket_with_llm(ticket: TicketInput) -> TriageResult:
-    # 0. Security Guardrail: สแกน Untrusted Input ดักจับ Prompt Injection
+    # --------------------------------------------------------------------------
+    # [KEYWORD_SECURITY_GUARDRAIL] : ดักจับ Prompt Injection ก่อนเข้า LLM
+    # --------------------------------------------------------------------------
     combined_input = f"{ticket.subject} {ticket.body}"
     _, is_safe, threat_desc = sanitize_untrusted_input(combined_input)
 
@@ -200,16 +225,20 @@ def triage_ticket_with_llm(ticket: TicketInput) -> TriageResult:
             escalate=False
         )
 
-    # 1. Intent Router Agent
+    # 1. คัดแยกประเภทตั๋ว
     category = intent_router_agent(ticket)
 
-    # 2. RAG Context Retrieval
+    # --------------------------------------------------------------------------
+    # [KEYWORD_RAG_SEARCH] : ดึงนโยบาย 5 ฉบับจากโฟลเดอร์ data/policies
+    # --------------------------------------------------------------------------
     query = f"{ticket.subject} {ticket.body} {category}"
     retrieved_chunks = rag_service.search_policies(query=query, top_k=3)
     policy_context = "\n\n".join([f"[{c['source']}]\n{c['text']}" for c in retrieved_chunks])
     retrieved_sources = list(set([c["source"] for c in retrieved_chunks])) if retrieved_chunks else ["routing_policy.txt"]
 
-    # 3. Specialist Agent Reasoning via Groq
+    # --------------------------------------------------------------------------
+    # [KEYWORD_LLM_INFERENCE] : ส่งให้ Groq และใช้ Delimiters กั้นข้อความ
+    # --------------------------------------------------------------------------
     expert_instruction = get_domain_expert_instruction(category)
     client = get_client()
     model_name = os.getenv("MODEL_NAME") or getattr(settings, "MODEL_NAME", None) or "openai/gpt-oss-20b"
@@ -221,12 +250,14 @@ def triage_ticket_with_llm(ticket: TicketInput) -> TriageResult:
         "metadata": ticket.metadata or {}
     }
 
+    # ล็อกพฤติกรรม LLM ห้ามกำหนด Priority หรือ Escalate เอง
     system_content = f"""{expert_instruction}
 Output strictly valid JSON with the following keys:
 "category", "sub_intent", "assigned_queue", "industry", "suggested_macro_id", "internal_notes", "policy_citations", "confidence".
 Do not include priority or escalate in your decision.
 """
 
+    # ใช้ Delimiters กั้น Input จากผู้ใช้ ป้องกัน Prompt Leakage
     user_content = f"""=== RETRIEVED POLICIES CONTEXT ===
 {policy_context}
 
@@ -246,10 +277,8 @@ Do not include priority or escalate in your decision.
 
     draft = json.loads(response.choices[0].message.content)
 
-    # 4. Deterministic SLA & Priority Scorer
+    # คำนวณ SLA และตรวจ Grounding
     priority, escalate, priority_justification = priority_scorer(ticket, category)
-
-    # 5. Judge Agent Verification
     validated_citations, judge_verdict = judge_agent(draft, retrieved_sources)
 
     return TriageResult(
@@ -265,6 +294,9 @@ Do not include priority or escalate in your decision.
         escalate=escalate
     )
 
+# ==============================================================================
+# [KEYWORD_ASYNC_BATCH] : ฟังก์ชันสำหรับรองรับการทำงานแบบ Asynchronous Batch
+# ==============================================================================
 async def triage_ticket_async(ticket: TicketInput) -> TriageResult:
     loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(None, triage_ticket_with_llm, ticket) 
+    return await loop.run_in_executor(None, triage_ticket_with_llm, ticket)
