@@ -45,6 +45,22 @@ PROMPT_REGISTRY: Dict[str, Dict[str, Any]] = {
                 "You are an Account Specialist. Handle 2FA/OTP failures, password resets, and account access locks. "
                 "Route to account_security_queue."
             ),
+            "shipping": (
+                "You are a Shipping & Logistics Specialist. Analyze parcel tracking, courier delays, and shipment issues. "
+                "Route to shipping_logistics_queue."
+            ),
+            "security": (
+                "You are a Cybersecurity Incident Specialist. Analyze data compromises, unauthorized logins, and threat alerts. "
+                "Route to security_incident_queue."
+            ),
+            "feedback": (
+                "You are a Customer Experience Feedback Agent. Analyze UX improvements, feature requests, and compliments. "
+                "Route to customer_feedback_queue."
+            ),
+            "other": (
+                "You are a General Care Triage Agent. Handle standard queries that do not belong to specialized queues. "
+                "Route to general_triage_queue."
+            ),
             "judge": (
                 "You are a Grounding Judge Agent. Verify that every citation in policy_citations corresponds "
                 "strictly to retrieved policy documentation. Do not invent rules or SLAs."
