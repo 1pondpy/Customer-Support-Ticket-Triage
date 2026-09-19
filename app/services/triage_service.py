@@ -164,7 +164,7 @@ def get_domain_expert_instruction(category: TicketCategory) -> str:
     return instructions.get(category, instructions["other"])
 
 
-# Deterministic SLA Matrix
+# Hard Rule, Override
 # ==============================================================================
 # [KEYWORD_DETERMINISTIC_SLA] : ควบคุม Priority ด้วย Hard Rules (ไม่ใช้ LLM สุ่ม)
 # ==============================================================================
@@ -201,7 +201,7 @@ def triage_ticket_with_llm(ticket: TicketInput) -> TriageResult:
     # [KEYWORD_SECURITY_GUARDRAIL] : ดักจับ Prompt Injection ก่อนเข้า LLM
     # --------------------------------------------------------------------------
     combined_input = f"{ticket.subject} {ticket.body}"
-    _, is_safe, threat_desc = sanitize_untrusted_input(combined_input)
+    _, is_safe, threat_desc = sanitize_untrusted_input(combined_input) ## ดักจับ Prompt Injection
 
     if not is_safe:
         ticket_id = "ANON"
